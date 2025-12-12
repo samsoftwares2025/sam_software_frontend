@@ -48,6 +48,7 @@ body {
 .container {
     display: flex;
     min-height: 100vh;
+    max-width: 3800px;
 }
 
 aside.sidebar {
@@ -79,7 +80,6 @@ main.main {
 .logo-container {
     padding: 0 24px 20px 24px;
     margin-bottom: 18px;
-    border-bottom: 1px solid var(--muted-border);
 }
 
 .logo {
@@ -150,12 +150,21 @@ main.main {
     margin-bottom: 18px;
     gap: 12px;
     flex-wrap: wrap;
+
+
 }
 
+/* common style for the line */
 .the_line {
-    border-bottom: 1px solid var(--muted-border);
-    margin-bottom: 18px;
+  border-bottom: 1px solid var(--muted-border);
 }
+
+/* adjust only the sidebar's line to match header’s vertical position */
+
+
+/* header line – no extra top margin */
+
+
 
 .page-title h1 {
     font-size: 26px;
@@ -1574,14 +1583,45 @@ table.data-table tbody tr:hover {
     }
 }
 
-/* Show only on mobile screens */
-@media (min-width: 769px) {
-    .logout-btn-mob {
-        display: none !important;
-    }
+
+
+
+
+.page-header {
+    display: flex;
+    justify-content: space-between; /* h3 left, button right */
+    align-items: center;            /* vertically center */
+    margin: 16px 0;
+    gap: 16px;
 }
 
+.page-title h3 {
+    margin: 0;
+}
 
+.page-title p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    opacity: 0.8; /* optional */
+}
+
+/* Button styles */
+#addEmployeeBtn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #26602c;
+    color: #fff;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+#addEmployeeBtn i {
+    font-size: 14px;
+}
 
 
 
