@@ -48,38 +48,38 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
             <span className="nav-caret">▸</span>
           </button>
           <ul className="submenu" aria-hidden={submenuHidden("employees")}>
-             <li>
-  <NavLink
-    to="/admin/employee-master"               // 👈 your React route
-    className={({ isActive }) =>
-      `submenu-link ${isActive ? "active-submenu" : ""}`
-    }
-  >
-      Master Data
-  </NavLink>
-</li>
-           
             <li>
-  <NavLink
-    to="/admin/employment-history"               // 👈 your React route
-    className={({ isActive }) =>
-      `submenu-link ${isActive ? "active-submenu" : ""}`
-    }
-  >
-     History
-  </NavLink>
-</li>
+              <NavLink
+                to="/admin/employee-master" // 👈 your React route
+                className={({ isActive }) =>
+                  `submenu-link ${isActive ? "active-submenu" : ""}`
+                }
+              >
+                Master Data
+              </NavLink>
+            </li>
 
-               <li>
-  <NavLink
-    to="/admin/employee-documents"               // 👈 your React route
-    className={({ isActive }) =>
-      `submenu-link ${isActive ? "active-submenu" : ""}`
-    }
-  >
-     Documents
-  </NavLink>
-</li>
+            <li>
+              <NavLink
+                to="/admin/employment-history" // 👈 your React route
+                className={({ isActive }) =>
+                  `submenu-link ${isActive ? "active-submenu" : ""}`
+                }
+              >
+                History
+              </NavLink>
+            </li>
+
+            <li>
+              <NavLink
+                to="/admin/employee-documents" // 👈 your React route
+                className={({ isActive }) =>
+                  `submenu-link ${isActive ? "active-submenu" : ""}`
+                }
+              >
+                Documents
+              </NavLink>
+            </li>
           </ul>
         </li>
 
@@ -99,14 +99,36 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
           <ul className="submenu" aria-hidden={submenuHidden("organization")}>
             <li>
               <NavLink
-    to="/admin/departments"               // 👈 your React route
-    className={({ isActive }) =>
-      `submenu-link ${isActive ? "active-submenu" : ""}`
-    }
-  >
-    Departments
-  </NavLink>
+                to="/admin/departments" // 👈 your React route
+                className={({ isActive }) =>
+                  `submenu-link ${isActive ? "active-submenu" : ""}`
+                }
+              >
+                Departments
+              </NavLink>
             </li>
+            <li>
+              <NavLink
+                to="/admin/designations" // 👈 your React route
+                className={({ isActive }) =>
+                  `submenu-link ${isActive ? "active-submenu" : ""}`
+                }
+              >
+                Designations
+              </NavLink>
+            </li>
+
+            <li>
+              <NavLink
+                to="/admin/employment-type" // 👈 your React route
+                className={({ isActive }) =>
+                  `submenu-link ${isActive ? "active-submenu" : ""}`
+                }
+              >
+                Employment Type
+              </NavLink>
+            </li>
+
             <li>
               <a
                 href="roles_and_permissions_listing.html"

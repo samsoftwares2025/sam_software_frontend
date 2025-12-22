@@ -1,3 +1,4 @@
+
 .nav-icon {
     color: #05A6F0;
     font-size: 18px;
@@ -1626,5 +1627,62 @@ table.data-table tbody tr:hover {
 
 
 
+/* not only designation but also the deaprtments,employement type */
+
+.designation-page-form-input {
+   width: 100%;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.95rem;
+
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;   /* ✅ rounded corners */
+  outline: none;
+
+  box-sizing: border-box;
+  margin-top: 1%;
+}
 
 
+.designation-page-form-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.75rem; /* reduced from default */
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: flex-end; /* right align on desktop */
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap; /* 🔑 allow wrapping on small screens */
+}
+
+/* Pagination buttons row */
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Keep text readable */
+#tableInfo {
+  white-space: nowrap;
+}
+
+/* 📱 Mobile view */
+@media (max-width: 640px) {
+  .pagination-wrapper {
+    justify-content: center; /* center on mobile */
+  }
+
+  #tableInfo {
+    width: 100%;
+    text-align: center;
+  }
+
+  .pagination {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,150 +1,161 @@
-// src/pages/admin/EmployeeMasterDataPage.jsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
-import "../../assets/styles/admin.css"; // make sure this includes your table/filter styles
-
-// Same data as your HTML table
-const EMPLOYEES = [
-  {
-    id: "#EMP-1001",
-    name: "John Smith",
-    email: "john.smith@abctech.com",
-    department: "Engineering",
-    designation: "Senior Software Engineer",
-    location: "Head Office - New York",
-    status: "Active",
-    joiningDate: "2022-03-15",
-  },
-  {
-    id: "#EMP-1002",
-    name: "Sarah Johnson",
-    email: "sarah.johnson@abctech.com",
-    department: "Marketing",
-    designation: "Marketing Specialist",
-    location: "Branch Office - California",
-    status: "Probation",
-    joiningDate: "2025-01-10",
-  },
-  {
-    id: "#EMP-1003",
-    name: "Mike Davis",
-    email: "mike.davis@abctech.com",
-    department: "HR",
-    designation: "HR Manager",
-    location: "Head Office - New York",
-    status: "Active",
-    joiningDate: "2020-11-01",
-  },
-  {
-    id: "#EMP-1004",
-    name: "Emily Carter",
-    email: "emily.carter@abctech.com",
-    department: "Sales",
-    designation: "Account Executive",
-    location: "Branch Office - Texas",
-    status: "Inactive",
-    joiningDate: "2019-08-20",
-  },
-  {
-    id: "#EMP-1005",
-    name: "Rahul Sharma",
-    email: "rahul.sharma@abctech.com",
-    department: "Engineering",
-    designation: "DevOps Engineer",
-    location: "Remote",
-    status: "Active",
-    joiningDate: "2021-05-12",
-  },
-  {
-    id: "#EMP-1006",
-    name: "Oliver Brown",
-    email: "oliver.brown@abctech.com",
-    department: "Finance",
-    designation: "Financial Analyst",
-    location: "Head Office - New York",
-    status: "Active",
-    joiningDate: "2023-02-05",
-  },
-  {
-    id: "#EMP-1007",
-    name: "Sophia Lee",
-    email: "sophia.lee@abctech.com",
-    department: "Sales",
-    designation: "Sales Associate",
-    location: "Branch Office - California",
-    status: "Probation",
-    joiningDate: "2025-10-01",
-  },
-  {
-    id: "#EMP-1008",
-    name: "Priya Nair",
-    email: "priya.nair@abctech.com",
-    department: "HR",
-    designation: "HR Executive",
-    location: "Remote",
-    status: "Inactive",
-    joiningDate: "2018-07-30",
-  },
-];
+import "../../assets/styles/admin.css";
+import {
+  getEmployeeMasterData,
+  filterEmployeeMasterData,
+} from "../../api/admin/employees";
 
 function EmployeeMasterDataPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [openSection, setOpenSection] = useState("employees");
 
+  const [employees, setEmployees] = useState([]);
+  const [departments, setDepartments] = useState([]); // ✅ NEW
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterDepartment, setFilterDepartment] = useState(""); 
+  const [filterDepartment, setFilterDepartment] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+
+  // 🔹 Pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(8);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const navigate = useNavigate();
 
-  const handleMenuClick = () => {
-    setIsSidebarOpen((prev) => !prev);
+  // ==============================
+  // Load employee list (INITIAL)
+  // ==============================
+  const loadEmployeeList = (pageNo = 1) => {
+    setLoading(true);
+    setError(null);
+
+    getEmployeeMasterData({
+      page: pageNo,
+      page_size: pageSize,
+    })
+      .then((resp) => {
+        const users = resp?.users_data || [];
+
+        setEmployees(users);
+        setTotalCount(resp?.total_count || 0);
+        setTotalPages(resp?.total_pages || 1);
+
+        // ✅ Extract departments ONCE
+        const uniqueDepartments = [
+          ...new Set(users.map((e) => e.department).filter(Boolean)),
+        ];
+        setDepartments(uniqueDepartments);
+      })
+      .catch(() => {
+        setError("Unable to load employee master data.");
+      })
+      .finally(() => setLoading(false));
   };
 
-  const handleOverlayClick = () => {
-    setIsSidebarOpen(false);
-  };
+  // Initial load
+  useEffect(() => {
+    loadEmployeeList(1);
+  }, []);
 
-  const handleClearFilters = () => {
-    setSearchTerm("");
-    setFilterDepartment("");
-    setFilterStatus("");
-  };
+  // ==============================
+  // Filtering
+  // ==============================
+  useEffect(() => {
+    setPage(1);
 
-  const filteredEmployees = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
+    if (!searchTerm && !filterDepartment && !filterStatus) {
+      loadEmployeeList(1);
+      return;
+    }
 
-    return EMPLOYEES.filter((emp) => {
-      const rowText = `${emp.id} ${emp.name} ${emp.email} ${emp.department} ${emp.designation} ${emp.location} ${emp.status} ${emp.joiningDate}`.toLowerCase();
+    setLoading(true);
 
-      const matchesSearch = !term || rowText.includes(term);
-      const matchesDept =
-        !filterDepartment || emp.department === filterDepartment;
-      const matchesStatus = !filterStatus || emp.status === filterStatus;
-
-      return matchesSearch && matchesDept && matchesStatus;
-    });
+    filterEmployeeMasterData({
+      search: searchTerm,
+      department: filterDepartment,
+      status: filterStatus,
+      page: 1,
+      page_size: pageSize,
+    })
+      .then((resp) => {
+        setEmployees(resp?.users_data || []);
+        setTotalCount(resp?.total_count || 0);
+        setTotalPages(resp?.total_pages || 1);
+      })
+      .catch(() => {
+        setError("Unable to filter employee data.");
+      })
+      .finally(() => setLoading(false));
   }, [searchTerm, filterDepartment, filterStatus]);
 
-  const totalCount = EMPLOYEES.length;
-  const visibleCount = filteredEmployees.length;
+  // ==============================
+  // Page change
+  // ==============================
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages) return;
 
+    setPage(newPage);
+    setLoading(true);
+
+    const payload = {
+      search: searchTerm,
+      department: filterDepartment,
+      status: filterStatus,
+      page: newPage,
+      page_size: pageSize,
+    };
+
+    const apiCall =
+      !searchTerm && !filterDepartment && !filterStatus
+        ? getEmployeeMasterData(payload)
+        : filterEmployeeMasterData(payload);
+
+    apiCall
+      .then((resp) => {
+        setEmployees(resp?.users_data || []);
+        setTotalCount(resp?.total_count || 0);
+        setTotalPages(resp?.total_pages || 1);
+      })
+      .finally(() => setLoading(false));
+  };
+
+  // ==============================
+  // Helpers
+  // ==============================
   const getStatusClassName = (status) => {
     if (status === "Active") return "status-pill status-active";
     if (status === "Probation") return "status-pill status-probation";
     return "status-pill status-inactive";
   };
 
-  const handleAddEmployeeClick = () => {
-    // Navigate to your Add Employee React route
+  const handleAddEmployee = () => {
     navigate("/admin/add-employee");
   };
 
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setFilterDepartment("");
+    setFilterStatus("");
+    setPage(1);
+    loadEmployeeList(1); // ✅ reload master data
+  };
+
+  // Pagination info
+  const startRow = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endRow = Math.min(page * pageSize, totalCount);
+
+  // ==============================
+  // Render
+  // ==============================
   return (
     <div className="container">
-      {/* Sidebar */}
       <Sidebar
         isMobileOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -152,51 +163,44 @@ function EmployeeMasterDataPage() {
         setOpenSection={setOpenSection}
       />
 
-      {/* Main */}
       <main className="main">
-        {/* Header */}
-        <Header onMenuClick={handleMenuClick} />
-
+        <Header onMenuClick={() => setIsSidebarOpen((p) => !p)} />
         <div className="the_line" />
 
-        {/* Page title */}
         <div className="page-title">
           <h3>Employee Master Data</h3>
           <p className="subtitle">
-            View, filter and manage all employee records in one place.
+            View, filter and manage all employee records.
           </p>
         </div>
 
-        {/* FILTERS BAR */}
+        {/* FILTERS */}
         <div className="filters-container">
           <div className="filters-left">
             <div className="search-input">
               <i className="fa-solid fa-magnifying-glass" />
               <input
-                type="text"
-                id="searchInput"
-                placeholder="Search by name, ID, department..."
+                placeholder="Search employees..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
+            {/* ✅ FIXED DEPARTMENT FILTER */}
             <select
-              id="filterDepartment"
               className="filter-select"
               value={filterDepartment}
               onChange={(e) => setFilterDepartment(e.target.value)}
             >
               <option value="">All Departments</option>
-              <option value="Engineering">Engineering</option>
-              <option value="Marketing">Marketing</option>
-              <option value="HR">HR</option>
-              <option value="Sales">Sales</option>
-              <option value="Finance">Finance</option>
+              {departments.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
             </select>
 
             <select
-              id="filterStatus"
               className="filter-select"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
@@ -208,26 +212,13 @@ function EmployeeMasterDataPage() {
             </select>
           </div>
 
-          <div className="filters-right">
-            <button
-              className="btn btn-ghost"
-              id="clearFiltersBtn"
-              type="button"
-              onClick={handleClearFilters}
-            >
-              <i className="fa-solid fa-filter-circle-xmark" />
-              Clear Filters
-            </button>
-            <button
-              className="btn btn-primary"
-              id="addEmployeeBtn"
-              type="button"
-              onClick={handleAddEmployeeClick}
-            >
-              <i className="fa-solid fa-user-plus" />
-              Add Employee
-            </button>
-          </div>
+          <button className="btn btn-ghost" onClick={handleClearFilters}>
+            <i className="fa-solid fa-filter-circle-xmark" /> Clear Filters
+          </button>
+
+          <button className="btn btn-primary" onClick={handleAddEmployee}>
+            <i className="fa-solid fa-user-plus" /> Add Employee
+          </button>
         </div>
 
         {/* TABLE */}
@@ -235,122 +226,107 @@ function EmployeeMasterDataPage() {
           <div className="table-header-bar">
             <h4>
               Employee List{" "}
-              <span className="badge-pill" id="employeeCountBadge">
-                Total: {visibleCount}
-              </span>
+              <span className="badge-pill">Total: {totalCount}</span>
             </h4>
-            <small>
-              Showing key master data, click actions to view full profile.
-            </small>
           </div>
 
-          <div className="data-table-wrapper">
-            <table className="data-table" id="employeeTable">
-              <thead>
-                <tr>
-                  <th>Employee ID</th>
-                  <th>Employee Name</th>
-                  <th>Email</th>
-                  <th>Department</th>
-                  <th>Designation</th>
-                  <th>Location</th>
-                  <th>Status</th>
-                  <th>Joining Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+          {loading ? (
+            <div style={{ padding: "1rem" }}>Loading employees...</div>
+          ) : error ? (
+            <div style={{ padding: "1rem", color: "orange" }}>{error}</div>
+          ) : (
+            <>
+              <div className="data-table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Employee ID</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Department</th>
+                      <th>Designation</th>
+                      <th>Location</th>
+                      <th>Status</th>
+                      <th>Joining Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {employees.map((emp, index) => (
+                      <tr key={emp.id}>
+                        <td>{(page - 1) * pageSize + index + 1}</td>
+                        <td>{emp.employee_id}</td>
+                        <td>{emp.name}</td>
+                        <td>{emp.official_email}</td>
+                        <td>{emp.department || "-"}</td>
+                        <td>{emp.designation || "-"}</td>
+                        <td>{emp.work_location || "-"}</td>
+                        <td>
+                          <span className={getStatusClassName(emp.status)}>
+                            ● {emp.status}
+                          </span>
+                        </td>
+                        <td>
+                          {emp.joining_date
+                            ? new Date(emp.joining_date).toLocaleDateString(
+                                "en-GB"
+                              )
+                            : "-"}
+                        </td>
+                      </tr>
+                    ))}
 
-              <tbody>
-                {filteredEmployees.map((emp) => (
-                  <tr
-                    key={emp.id}
-                    data-department={emp.department}
-                    data-status={emp.status}
+                    {employees.length === 0 && (
+                      <tr>
+                        <td colSpan={9} style={{ textAlign: "center" }}>
+                          No employees found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* PAGINATION */}
+              <div className="pagination-wrapper">
+                <div id="tableInfo">
+                  Showing {startRow} to {endRow} of {totalCount} employees
+                </div>
+
+                <div className="pagination">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => handlePageChange(page - 1)}
                   >
-                    <td>{emp.id}</td>
-                    <td>{emp.name}</td>
-                    <td>{emp.email}</td>
-                    <td>{emp.department}</td>
-                    <td>{emp.designation}</td>
-                    <td>{emp.location}</td>
-                    <td>
-                      <span className={getStatusClassName(emp.status)}>
-                        <span className="dot">●</span> {emp.status}
-                      </span>
-                    </td>
-                    <td>{emp.joiningDate}</td>
-                    <td>
-                      <div className="table-actions">
-                        <button
-                          className="icon-btn view"
-                          title="View Profile"
-                          type="button"
-                        >
-                          <i className="fa-solid fa-eye" />
-                        </button>
-                        <button
-                          className="icon-btn edit"
-                          title="Edit"
-                          type="button"
-                        >
-                          <i className="fa-solid fa-pen" />
-                        </button>
-                        <button
-                          className="icon-btn delete"
-                          title="Delete"
-                          type="button"
-                        >
-                          <i className="fa-solid fa-trash" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                    <i className="fa-solid fa-angle-left" />
+                  </button>
 
-                {visibleCount === 0 && (
-                  <tr>
-                    <td
-                      colSpan={9}
-                      style={{ textAlign: "center", padding: "1.5rem" }}
-                    >
-                      No employees match the selected filters.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                  {[...Array(totalPages)].map((_, idx) => {
+                    const pageNum = idx + 1;
+                    return (
+                      <button
+                        key={pageNum}
+                        className={page === pageNum ? "active-page" : ""}
+                        disabled={page === pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
 
-          <div className="table-footer">
-            <div id="tableInfo">
-              Showing 1 to {visibleCount} of {totalCount} employees
-            </div>
-            <div className="pagination">
-              <button disabled title="Previous page" type="button">
-                <i className="fa-solid fa-angle-left" />
-              </button>
-              <button className="active-page" type="button">
-                1
-              </button>
-              <button disabled type="button">
-                2
-              </button>
-              <button disabled title="Next page" type="button">
-                <i className="fa-solid fa-angle-right" />
-              </button>
-            </div>
-          </div>
+                  <button
+                    disabled={page === totalPages}
+                    onClick={() => handlePageChange(page + 1)}
+                  >
+                    <i className="fa-solid fa-angle-right" />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </main>
-
-      {/* mobile sidebar overlay */}
-      <div
-        id="sidebarOverlay"
-        className={`sidebar-overlay ${isSidebarOpen ? "show" : ""}`}
-        tabIndex={-1}
-        aria-hidden={!isSidebarOpen}
-        onClick={handleOverlayClick}
-      />
     </div>
   );
 }

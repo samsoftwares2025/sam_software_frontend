@@ -3,9 +3,11 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../assets/styles/CompanyRegistrationPage.css";
 import { loginUser } from "../../api/auth";
+import { useAuth } from "../../context/AuthContext";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,10 +22,34 @@ const LoginPage = () => {
 
     try {
       console.log("SENDING LOGIN REQUEST:", { email, password });
-      const data = await loginUser(email, password);
-      console.log("LOGIN SUCCESS:", data);
 
-      // loginUser already called setAuth(); we just navigate
+      // 🔥 IMPORTANT: get response back
+      const res = await loginUser(email, password);
+
+      console.log("LOGIN RESPONSE:", res);
+
+      // ===============================
+      // ✅ SAVE AUTH DATA (CRITICAL FIX)
+      // ===============================
+
+      // save token (profile expects key = "token")
+      localStorage.setItem("token", res.token || res.access);
+
+      // save user id (profile expects key = "user_id")
+      localStorage.setItem(
+        "user_id",
+        res.user?.id || res.user_id || res.id
+      );
+
+      console.log("AFTER LOGIN STORAGE:", {
+        token: localStorage.getItem("token"),
+        user_id: localStorage.getItem("user_id"),
+      });
+
+      // update auth context
+      login();
+
+      // redirect
       navigate("/admin/dashboard", { replace: true });
     } catch (err) {
       console.error("LOGIN FAILED RAW ERROR:", err);
@@ -31,9 +57,7 @@ const LoginPage = () => {
       let message = "Something went wrong while logging in";
 
       if (err.response) {
-        console.log("ERROR RESPONSE DATA:", err.response.data);
         const d = err.response.data;
-
         message =
           d.detail ||
           d.message ||
@@ -62,7 +86,9 @@ const LoginPage = () => {
             <br />
             to HR Partner
           </h1>
-          <p>Manage hiring, employees, and payroll from one central HR workspace.</p>
+          <p>
+            Manage hiring, employees, and payroll from one central HR workspace.
+          </p>
 
           <div className="features">
             <div className="feature-item">✔ Unified employee records</div>
@@ -81,7 +107,11 @@ const LoginPage = () => {
           <form onSubmit={handleSubmit}>
             <div className="section-title">Login Details</div>
 
-            {error && <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>}
+            {error && (
+              <div style={{ color: "red", marginBottom: "10px" }}>
+                {error}
+              </div>
+            )}
 
             <div className="input-group">
               <label htmlFor="email">Work Email</label>
@@ -89,7 +119,6 @@ const LoginPage = () => {
                 <input
                   type="email"
                   id="email"
-                  name="email"
                   placeholder="name@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -104,7 +133,6 @@ const LoginPage = () => {
                 <input
                   type={showPassword ? "text" : "password"}
                   id="password"
-                  name="password"
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -133,11 +161,14 @@ const LoginPage = () => {
 
             <div className="options">
               <label className="remember-me">
-                <input type="checkbox" name="remember" />
+                <input type="checkbox" />
                 <span>Keep me signed in</span>
               </label>
 
-              <a href="#" style={{ fontSize: "13px", color: "var(--accent)" }}>
+              <a
+                href="/admin/forget-password"
+                style={{ fontSize: "13px", color: "var(--accent)" }}
+              >
                 Forgot password?
               </a>
             </div>
@@ -145,10 +176,6 @@ const LoginPage = () => {
             <button type="submit" className="login-btn" disabled={isSubmitting}>
               {isSubmitting ? "Signing in..." : "Sign In"}
             </button>
-
-            <div className="signup-link">
-              New to HR Partner? <a href="/admin/registration">Create a company account</a>
-            </div>
           </form>
         </div>
       </div>

@@ -1,4 +1,4 @@
-// src/api/admin/departments.js
+// src/api/admin/designations.js
 import http from "../http";
 
 /**
@@ -9,18 +9,20 @@ const getUserId = () => {
 };
 
 /**
- * createDepartment
+ * createDesignation
  */
-export const createDepartment = async (name) => {
+// src/api/admin/designations.js
+export const createDesignation = async ({ name, department_id }) => {
   const userId = getUserId();
 
   const payload = {
     name,
+    department_id: Number(department_id), // ✅ ensure integer
     user_id: userId,
   };
 
   const { data } = await http.post(
-    "/companies/add-department/",
+    "/companies/add-designation/",
     payload
   );
 
@@ -28,15 +30,13 @@ export const createDepartment = async (name) => {
 };
 
 /**
- * getDepartments
+ * getDesignations
  */
-export const getDepartments = async () => {
-  console.log("🔥 getDepartments CALLED");
-
+export const getDesignations = async () => {
   const userId = getUserId();
 
   const { data } = await http.post(
-    "/companies/list-departments/",
+    "/companies/list-designations/",
     { user_id: userId }
   );
 
@@ -44,19 +44,24 @@ export const getDepartments = async () => {
 };
 
 /**
- * updateDepartment
+ * updateDesignation
  */
-export const updateDepartment = async (departmentId, name) => {
+export const updateDesignation = async (
+  designationId,
+  name,
+  departmentId
+) => {
   const userId = getUserId();
 
   const payload = {
-    department_id: departmentId,
+    designation_id: designationId,
     name,
+    department_id: departmentId,
     user_id: userId,
   };
 
   const { data } = await http.post(
-    "/companies/update-department/",
+    "/companies/update-designation/",
     payload
   );
 
@@ -64,18 +69,18 @@ export const updateDepartment = async (departmentId, name) => {
 };
 
 /**
- * deleteDepartment
+ * deleteDesignation
  */
-export const deleteDepartment = async (departmentId) => {
+export const deleteDesignation = async (designationId) => {
   const userId = getUserId();
 
   const payload = {
-    department_id: departmentId,
+    designation_id: designationId,
     user_id: userId,
   };
 
   const { data } = await http.post(
-    "/companies/delete-department/",
+    "/companies/delete-designation/",
     payload
   );
 

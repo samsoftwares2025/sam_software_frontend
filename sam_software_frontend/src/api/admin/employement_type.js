@@ -1,4 +1,4 @@
-// src/api/admin/departments.js
+// src/api/admin/employement_type.js
 import http from "../http";
 
 /**
@@ -9,9 +9,9 @@ const getUserId = () => {
 };
 
 /**
- * createDepartment
+ * createEmployementType
  */
-export const createDepartment = async (name) => {
+export const createEmployementType = async (name) => {
   const userId = getUserId();
 
   const payload = {
@@ -20,7 +20,7 @@ export const createDepartment = async (name) => {
   };
 
   const { data } = await http.post(
-    "/companies/add-department/",
+    "/hr/add-employment-type/",
     payload
   );
 
@@ -28,15 +28,13 @@ export const createDepartment = async (name) => {
 };
 
 /**
- * getDepartments
+ * getEmployementTypes
  */
-export const getDepartments = async () => {
-  console.log("🔥 getDepartments CALLED");
-
+export const getEmployementTypes = async () => {
   const userId = getUserId();
 
   const { data } = await http.post(
-    "/companies/list-departments/",
+    "/hr/list-employment-type/",
     { user_id: userId }
   );
 
@@ -44,19 +42,19 @@ export const getDepartments = async () => {
 };
 
 /**
- * updateDepartment
+ * updateEmployementType
  */
-export const updateDepartment = async (departmentId, name) => {
+export const updateEmployementType = async (employmentTypeId, name) => {
   const userId = getUserId();
 
   const payload = {
-    department_id: departmentId,
+    employment_type_id: employmentTypeId,
     name,
     user_id: userId,
   };
 
   const { data } = await http.post(
-    "/companies/update-department/",
+    "/hr/update-employment-type/",
     payload
   );
 
@@ -64,18 +62,18 @@ export const updateDepartment = async (departmentId, name) => {
 };
 
 /**
- * deleteDepartment
+ * deleteEmployementType
  */
-export const deleteDepartment = async (departmentId) => {
+export const deleteEmployementType = async (employmentTypeId) => {
   const userId = getUserId();
 
   const payload = {
-    department_id: departmentId,
+    employment_type_id: employmentTypeId,
     user_id: userId,
   };
 
   const { data } = await http.post(
-    "/companies/delete-department/",
+    "/hr/delete-employment-type/",
     payload
   );
 

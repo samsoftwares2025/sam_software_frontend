@@ -1,217 +1,166 @@
 // src/components/admin/EmployeeForm.jsx
 import React, { useState, useRef, useEffect } from "react";
-import { API_BASE_URL } from "../../api/config"; // <-- adjust path if needed
+import { getDepartments, createDepartment } from "../../api/admin/departments";
+import { getDesignations, createDesignation } from "../../api/admin/designations";
+import { getEmployementTypes,  createEmployementType } from "../../api/admin/employement_type";
 
-// Default data for departments & designations
-const defaultDepartments = [
-  { value: "engineering", label: "Engineering" },
-  { value: "marketing", label: "Marketing" },
-  { value: "hr", label: "HR" },
-  { value: "sales", label: "Sales" },
-  { value: "finance", label: "Finance" },
-];
-
-const defaultDesignationsByDept = {
-  engineering: [
-    "Software Engineer",
-    "Senior Software Engineer",
-    "Tech Lead",
-    "Engineering Manager",
-  ],
-  marketing: ["Marketing Executive", "Marketing Manager", "SEO Specialist"],
-  hr: ["HR Executive", "HR Manager"],
-  sales: ["Sales Executive", "Sales Manager", "Account Manager"],
-  finance: ["Accountant", "Finance Manager"],
-};
 
 function EmployeeForm({ onSubmit, onSuccess, initialValues = {}, mode = "create" }) {
+  const formRef = useRef(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const formRef = useRef(null);
 
-  // Departments + Designations state
-  const [departments, setDepartments] = useState(defaultDepartments);
-  const [designationsByDept, setDesignationsByDept] = useState(defaultDesignationsByDept);
+  /* ================= EMPLOYMENT TYPE ================= */
+  const [employmentTypes, setEmploymentTypes] = useState([]);
+  const [selectedEmploymentType, setSelectedEmploymentType] = useState("");
 
-  const [selectedDepartment, setSelectedDepartment] = useState(initialValues.department || "");
-  const [selectedDesignation, setSelectedDesignation] = useState(initialValues.designation || "");
+const [isAddingEmploymentType, setIsAddingEmploymentType] = useState(false);
+const [newEmploymentTypeName, setNewEmploymentTypeName] = useState("");
 
-  // NEW STATE: inline add fields instead of window.prompt
+
+const handleEmploymentTypeChange = (e) => {
+  const value = e.target.value;
+
+  if (value === "__add_employment_type__") {
+    setIsAddingEmploymentType(true);
+    return;
+  }
+
+  setSelectedEmploymentType(value);
+};
+
+const handleConfirmAddEmploymentType = async () => {
+  if (!newEmploymentTypeName.trim()) return;
+
+  try {
+    const res = await createEmployementType(newEmploymentTypeName.trim());
+
+    // refresh list
+    const resp = await getEmployementTypes();
+    const list = Array.isArray(resp?.employment_types)
+      ? resp.employment_types
+      : Array.isArray(resp)
+      ? resp
+      : [];
+
+    setEmploymentTypes(list);
+
+    // auto-select newly created
+    setSelectedEmploymentType(String(res.id));
+
+    setIsAddingEmploymentType(false);
+    setNewEmploymentTypeName("");
+  } catch (err) {
+    console.error("Failed to add employment type", err);
+  }
+};
+
+const handleCancelAddEmploymentType = () => {
+  setIsAddingEmploymentType(false);
+  setNewEmploymentTypeName("");
+};
+
+useEffect(() => {
+  const fetchEmploymentTypes = async () => {
+    try {
+      const resp = await getEmployementTypes();
+
+      let list = [];
+      if (Array.isArray(resp?.employment_types)) list = resp.employment_types;
+      else if (Array.isArray(resp)) list = resp;
+      else if (Array.isArray(resp?.results)) list = resp.results;
+      else if (Array.isArray(resp?.data)) list = resp.data;
+
+      setEmploymentTypes(list);
+    } catch (err) {
+      console.error("Failed to load employment types", err);
+      setEmploymentTypes([]);
+    }
+  };
+
+  fetchEmploymentTypes();
+}, []);
+const refreshEmploymentTypes = async () => {
+  try {
+    const resp = await getEmployementTypes();
+
+    let list = [];
+    if (Array.isArray(resp?.employment_types)) list = resp.employment_types;
+    else if (Array.isArray(resp)) list = resp;
+    else if (Array.isArray(resp?.results)) list = resp.results;
+    else if (Array.isArray(resp?.data)) list = resp.data;
+
+    setEmploymentTypes(list);
+    setSelectedEmploymentType("");
+  } catch (err) {
+    console.error("Failed to refresh employment types", err);
+  }
+};
+
+  /* ================= DEPARTMENT / DESIGNATION ================= */
+  const [departments, setDepartments] = useState([]);
+  const [designationsByDept, setDesignationsByDept] = useState({});
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [selectedDesignation, setSelectedDesignation] = useState("");
+
   const [isAddingDept, setIsAddingDept] = useState(false);
   const [newDeptLabel, setNewDeptLabel] = useState("");
 
   const [isAddingDesig, setIsAddingDesig] = useState(false);
   const [newDesigLabel, setNewDesigLabel] = useState("");
 
-  // Previous Work Experience State
-  const [experienceList, setExperienceList] = useState(
-    Array.isArray(initialValues.experienceList) && initialValues.experienceList.length > 0
-      ? initialValues.experienceList
-      : [{ company: "", title: "", start: "", end: "", responsibilities: "" }]
-  );
+  const fetchDepartments = async () => {
+    const res = await getDepartments();
+    const list = Array.isArray(res) ? res : res?.departments || [];
+    setDepartments(list.map(d => ({ value: d.id, label: d.name })));
+  };
 
-  // Documents initial shape (includes files + previews arrays)
-  const emptyDocument = () => ({
-    type: "visa",
-    number: "",
-    country: "",
-    issue_date: "",
-    expiry_date: "",
-    status: "valid",
-    notes: "",
-    files: [], // Array<File>
-    previews: [], // Array<{name, url}>
-  });
-
-  const [documents, setDocuments] = useState(() => {
-    if (Array.isArray(initialValues.documents) && initialValues.documents.length > 0) {
-      // map initial docs but ensure files/previews keys exist
-      return initialValues.documents.map((d) => ({ ...emptyDocument(), ...d, files: d.files || [], previews: d.previews || [] }));
-    }
-    return [emptyDocument()];
-  });
-
-  // keep a ref to documents for unmount cleanup
-  const documentsRef = useRef(documents);
-  useEffect(() => {
-    documentsRef.current = documents;
-  }, [documents]);
-
-  // -----------------------
-  // Document handlers
-  // -----------------------
-  const handleDocumentChange = (index, key, value) => {
-    setDocuments((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], [key]: value };
-      return copy;
+  const fetchDesignations = async () => {
+    const res = await getDesignations();
+    const list = Array.isArray(res) ? res : res?.designations || [];
+    const grouped = {};
+    list.forEach(d => {
+      if (!grouped[d.department_id]) grouped[d.department_id] = [];
+      grouped[d.department_id].push(d);
     });
+    setDesignationsByDept(grouped);
   };
-
-  // Create previews for File[] and append to existing ones
-  const makePreviews = (filesArray) =>
-    Array.from(filesArray || []).map((f) => ({ name: f.name, url: URL.createObjectURL(f) }));
-
-  // Add/replace files for document: this appends new files (doesn't replace existing ones)
-  const handleDocumentFilesChange = (index, fileList) => {
-    const filesArray = Array.from(fileList || []);
-    if (filesArray.length === 0) return;
-
-    const newPreviews = makePreviews(filesArray);
-
-    setDocuments((prev) => {
-      const copy = [...prev];
-      const doc = { ...copy[index] };
-      doc.files = [...(doc.files || []), ...filesArray];
-      doc.previews = [...(doc.previews || []), ...newPreviews];
-      copy[index] = doc;
-      return copy;
-    });
-  };
-
-  const handleRemoveDocumentFile = (docIndex, fileIndex) => {
-    setDocuments((prev) => {
-      const copy = [...prev];
-      const doc = { ...copy[docIndex] };
-      if (doc.previews && doc.previews[fileIndex] && doc.previews[fileIndex].url) {
-        try {
-          URL.revokeObjectURL(doc.previews[fileIndex].url);
-        } catch (e) {
-          /* ignore revoke errors */
-        }
-      }
-      doc.files = (doc.files || []).filter((_, i) => i !== fileIndex);
-      doc.previews = (doc.previews || []).filter((_, i) => i !== fileIndex);
-      copy[docIndex] = doc;
-      return copy;
-    });
-  };
-
-  const handleAddDocument = () => {
-    setDocuments((prev) => [...prev, emptyDocument()]);
-  };
-
-  const handleRemoveDocument = (index) => {
-    // revoke previews for removed doc
-    setDocuments((prev) => {
-      const copy = [...prev];
-      const removed = copy.splice(index, 1)[0];
-      if (removed && removed.previews) {
-        removed.previews.forEach((p) => {
-          try {
-            URL.revokeObjectURL(p.url);
-          } catch (e) {}
-        });
-      }
-      return copy;
-    });
-  };
-
-  // -----------------------
-  // Experience handlers
-  // -----------------------
-  const handleAddExperience = () => {
-    setExperienceList((prev) => [
-      ...prev,
-      { company: "", title: "", start: "", end: "", responsibilities: "" },
-    ]);
-  };
-
-  const handleRemoveExperience = (index) => {
-    setExperienceList((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleExperienceChange = (index, field, value) => {
-    setExperienceList((prev) => prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)));
-  };
-
-  // effects for initial values
-  useEffect(() => {
-    if (initialValues.photo) {
-      setPhotoPreview(initialValues.photo);
-    }
-  }, [initialValues.photo]);
 
   useEffect(() => {
-    if (initialValues.department) setSelectedDepartment(initialValues.department);
-  }, [initialValues.department]);
+    fetchDepartments();
+    fetchDesignations();
+  }, []);
 
-  useEffect(() => {
-    if (initialValues.designation) setSelectedDesignation(initialValues.designation);
-  }, [initialValues.designation]);
-
-  const handlePhotoChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => setPhotoPreview(event.target.result);
-    reader.readAsDataURL(file);
-  };
-
-  // Department / Designation handlers (unchanged)
-  const handleDepartmentChange = (e) => {
-    const value = e.target.value;
-    if (value === "__add_dept__") {
-      setIsAddingDept(true);
-      setNewDeptLabel("");
-      return;
-    }
-    setIsAddingDept(false);
-    setSelectedDepartment(value);
+  /* ================= HANDLERS ================= */
+  const handleDepartmentChange = e => {
+    const val = e.target.value;
+    if (val === "__add_dept__") return setIsAddingDept(true);
+    setSelectedDepartment(val);
     setSelectedDesignation("");
   };
 
-  const handleConfirmAddDepartment = () => {
-    const label = newDeptLabel.trim();
-    if (!label) return;
-    const value = label.toLowerCase().replace(/\s+/g, "_");
-    setDepartments((prev) => {
-      if (prev.some((d) => d.value === value)) return prev;
-      return [...prev, { value, label }];
-    });
-    setDesignationsByDept((prev) => ({ ...prev, [value]: prev[value] || [] }));
-    setSelectedDepartment(value);
+  const handleDesignationChange = e => {
+    const val = e.target.value;
+    if (val === "__add_desig__") return setIsAddingDesig(true);
+    setSelectedDesignation(val);
+  };
+
+  const refreshDepartments = async () => {
+    await fetchDepartments();
+    setSelectedDepartment("");
     setSelectedDesignation("");
+  };
+
+  const refreshDesignations = async () => {
+    await fetchDesignations();
+    setSelectedDesignation("");
+  };
+
+  const handleConfirmAddDepartment = async () => {
+    if (!newDeptLabel.trim()) return;
+    const res = await createDepartment(newDeptLabel.trim());
+    await fetchDepartments();
+    setSelectedDepartment(String(res.id));
     setIsAddingDept(false);
     setNewDeptLabel("");
   };
@@ -219,30 +168,16 @@ function EmployeeForm({ onSubmit, onSuccess, initialValues = {}, mode = "create"
   const handleCancelAddDepartment = () => {
     setIsAddingDept(false);
     setNewDeptLabel("");
-    if (!selectedDepartment) setSelectedDepartment("");
   };
 
-  const handleDesignationChange = (e) => {
-    const value = e.target.value;
-    if (value === "__add_desig__") {
-      setIsAddingDesig(true);
-      setNewDesigLabel("");
-      return;
-    }
-    setIsAddingDesig(false);
-    setSelectedDesignation(value);
-  };
-
-  const handleConfirmAddDesignation = () => {
-    if (!selectedDepartment) return;
-    const newDesignation = newDesigLabel.trim();
-    if (!newDesignation) return;
-    setDesignationsByDept((prev) => {
-      const existing = prev[selectedDepartment] || [];
-      if (existing.includes(newDesignation)) return prev;
-      return { ...prev, [selectedDepartment]: [...existing, newDesignation] };
+  const handleConfirmAddDesignation = async () => {
+    if (!newDesigLabel.trim() || !selectedDepartment) return;
+    const res = await createDesignation({
+      name: newDesigLabel.trim(),
+      department_id: Number(selectedDepartment),
     });
-    setSelectedDesignation(newDesignation);
+    await fetchDesignations();
+    setSelectedDesignation(String(res.id));
     setIsAddingDesig(false);
     setNewDesigLabel("");
   };
@@ -250,115 +185,172 @@ function EmployeeForm({ onSubmit, onSuccess, initialValues = {}, mode = "create"
   const handleCancelAddDesignation = () => {
     setIsAddingDesig(false);
     setNewDesigLabel("");
-    if (!selectedDesignation) setSelectedDesignation("");
   };
 
-  const refreshDepartments = () => {
-    setDepartments(defaultDepartments);
-    setSelectedDepartment("");
-    setIsAddingDept(false);
+  /* ================= PHOTO ================= */
+const [photoFile, setPhotoFile] = useState(null);
+
+const handlePhotoChange = (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    setPhotoPreview(URL.createObjectURL(file));
+    setPhotoFile(file); // ✔ store file
+  }
+};
+
+
+  /* ================= DOCUMENTS ================= */
+  const [documents, setDocuments] = useState([
+    { type: "visa", number: "", country: "", issue_date: "", expiry_date: "", status: "valid", notes: "", files: [], previews: [] },
+  ]);
+
+  const handleAddDocument = () => {
+    setDocuments(prev => [...prev, { ...prev[0], files: [], previews: [] }]);
   };
 
-  const refreshDesignations = () => {
-    setDesignationsByDept(defaultDesignationsByDept);
-    setSelectedDesignation("");
-    setIsAddingDesig(false);
+  const handleDocumentChange = (index, field, value) => {
+    setDocuments(prev =>
+      prev.map((doc, i) => (i === index ? { ...doc, [field]: value } : doc))
+    );
   };
 
-  // Submit: append experience_list, documents (metadata) and files
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-
-    // include experienceList in request as JSON
-    formData.append("experience_list", JSON.stringify(experienceList));
-
-    // prepare document metadata (omit file objects & previews)
-    const docsMeta = documents.map(({ files, previews, ...rest }) => rest);
-    formData.append("documents", JSON.stringify(docsMeta));
-
-    // append files for each document as documents_files_<index>[]
-    documents.forEach((doc, docIndex) => {
-      (doc.files || []).forEach((file) => {
-        formData.append(`documents_files_${docIndex}[]`, file, file.name);
-      });
-    });
-
-    if (onSubmit) onSubmit(formData);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/employees/`, {
-        method: mode === "edit" ? "PUT" : "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        console.error("Backend error:", await response.text());
-        alert("Failed to save employee (backend error). Check console.");
-        return;
-      }
-
-      const data = await response.json();
-      console.log("Employee saved:", data);
-
-      setShowSuccess(true);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-
-      setTimeout(() => {
-        setShowSuccess(false);
-        if (onSuccess) onSuccess();
-      }, 3000);
-    } catch (err) {
-      console.error("Network error:", err);
-      alert("Network error. Is Django running?");
-    }
+  const handleDocumentFilesChange = (index, files) => {
+    const arr = Array.from(files);
+    setDocuments(prev =>
+      prev.map((doc, i) =>
+        i === index
+          ? {
+              ...doc,
+              files: [...doc.files, ...arr],
+              previews: [...doc.previews, ...arr.map(f => ({ url: URL.createObjectURL(f) }))],
+            }
+          : doc
+      )
+    );
   };
 
-  // Reset: clear form inputs + revoke previews
+  const handleRemoveDocumentFile = (docIdx, fileIdx) => {
+    setDocuments(prev =>
+      prev.map((doc, i) =>
+        i === docIdx
+          ? {
+              ...doc,
+              files: doc.files.filter((_, fi) => fi !== fileIdx),
+              previews: doc.previews.filter((_, fi) => fi !== fileIdx),
+            }
+          : doc
+      )
+    );
+  };
+
+  // ✅ MISSING FUNCTION (THIS FIXES THE CRASH)
+  const handleRemoveDocument = index => {
+    setDocuments(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleReset = () => {
-    if (formRef.current) formRef.current.reset();
-
-    // revoke previews
-    (documentsRef.current || []).forEach((d) => (d.previews || []).forEach((p) => {
-      try { URL.revokeObjectURL(p.url); } catch (e) {}
-    }));
-
+    formRef.current?.reset();
     setPhotoPreview(null);
-    setSelectedDepartment(initialValues.department || "");
-    setSelectedDesignation(initialValues.designation || "");
-    setIsAddingDept(false);
-    setIsAddingDesig(false);
-    setNewDeptLabel("");
-    setNewDesigLabel("");
-    setExperienceList(
-      Array.isArray(initialValues.experienceList) && initialValues.experienceList.length > 0
-        ? initialValues.experienceList
-        : [{ company: "", title: "", start: "", end: "", responsibilities: "" }]
-    );
-    setDocuments(
-      Array.isArray(initialValues.documents) && initialValues.documents.length > 0
-        ? initialValues.documents.map((d) => ({ ...emptyDocument(), ...d, files: d.files || [], previews: d.previews || [] }))
-        : [emptyDocument()]
-    );
+    setSelectedDepartment("");
+    setSelectedDesignation("");
+    setSelectedEmploymentType("");
+    setDocuments([
+      { type: "visa", number: "", country: "", issue_date: "", expiry_date: "", status: "valid", notes: "", files: [], previews: [] },
+    ]);
   };
 
-  // cleanup on unmount: revoke any remaining object URLs
-  useEffect(() => {
-    return () => {
-      (documentsRef.current || []).forEach((d) => (d.previews || []).forEach((p) => {
-        try { URL.revokeObjectURL(p.url); } catch (e) {}
-      }));
-    };
-  }, []);
+  /* ================= SUBMIT ================= */
+ const handleSubmit = (e) => {
+  e.preventDefault();
 
+  const formData = new FormData(); // ✅ CREATE FIRST
+
+  // ✅ THEN append image
+  if (photoFile) {
+    formData.append("image", photoFile);
+  }
+
+  formData.append("user_id", localStorage.getItem("userId"));
+  formData.append("name", e.target.full_name.value);
+  formData.append("date_of_birth", e.target.dob.value);
+  formData.append("gender", e.target.gender.value);
+  formData.append("personal_email", e.target.personal_email.value);
+  formData.append("phone", e.target.phone.value);
+  formData.append("qualification", e.target.qualification.value);
+  formData.append("address", e.target.address.value);
+
+
+  formData.append("employee_id", e.target.employee_id.value);
+  formData.append("official_email", e.target.company_email.value);
+  formData.append("joining_date", e.target.joining_date.value);
+
+  // ✅ FK IDs (SAFE PARSING)
+  formData.append(
+    "employment_type_id",
+    parseInt(selectedEmploymentType, 10)
+  );
+  formData.append(
+    "department_id",
+    parseInt(selectedDepartment, 10)
+  );
+  formData.append(
+    "designation_id",
+    parseInt(selectedDesignation, 10)
+  );
+
+  formData.append("work_location", e.target.location.value);
+
+  formData.append("annual_ctc", e.target.ctc.value);
+  formData.append("basic_salary", e.target.basic_salary.value);
+  formData.append("variable_pay", e.target.variable_pay.value);
+
+const mappedDocuments = documents.map((doc, idx) => ({
+  document_type: doc.type,
+  document_number: doc.number,
+  country: doc.country,
+  issue_date: doc.issue_date,
+  expiry_date: doc.expiry_date,
+  status: doc.status,
+  note: doc.notes,
+  image_field: `document_images_${idx}`,
+}));
+
+formData.append("documents", JSON.stringify(mappedDocuments));
+
+// 🔥 THIS IS REQUIRED FOR FILE UPLOAD
+documents.forEach((doc, idx) => {
+  doc.files.forEach((file) => {
+    formData.append(`document_images_${idx}`, file);
+  });
+});
+
+
+
+  // 🔍 PRINT EVERYTHING (DEBUG)
+  console.log("===== FORM DATA PAYLOAD =====");
+  for (let [key, value] of formData.entries()) {
+    console.log(key, value, typeof value);
+  }
+  console.log("===== END FORM DATA =====");
+
+  // 🚀 SEND TO BACKEND
+  onSubmit(formData);
+
+  setShowSuccess(true);
+  setTimeout(() => setShowSuccess(false), 3000);
+  onSuccess?.();
+};
+
+
+  /* ================= RENDER ================= */
   return (
     <>
-      <div className={`success-message ${showSuccess ? "show" : ""}`}>
+     <div className={`success-message ${showSuccess ? "show" : ""}`}>
         <i className="fa-solid fa-check-circle" />
         {mode === "edit" ? "Employee updated successfully!" : "Employee added successfully!"}
       </div>
 
-      <form className="form-container" id="employeeForm" onSubmit={handleSubmit} ref={formRef}>
+       <form className="form-container" id="employeeForm" onSubmit={handleSubmit} ref={formRef}>
         {/* Personal Information */}
         <div className="form-section">
           <h2 className="section-title">
@@ -375,7 +367,7 @@ function EmployeeForm({ onSubmit, onSuccess, initialValues = {}, mode = "create"
                 <label htmlFor="photoUpload" className="upload-btn">
                   <i className="fa-solid fa-upload" /> Upload Photo
                 </label>
-                <input type="file" id="photoUpload" className="file-input" accept="image/*" name="photo" onChange={handlePhotoChange} />
+                <input type="file" id="photoUpload" className="file-input" accept="image/*" name="image" onChange={handlePhotoChange} />
               </div>
             </div>
           </div>
@@ -438,16 +430,88 @@ function EmployeeForm({ onSubmit, onSuccess, initialValues = {}, mode = "create"
               <label className="form-label required">Joining Date</label>
               <input type="date" className="form-input" name="joining_date" required defaultValue={initialValues.joining_date || ""} />
             </div>
-            <div className="form-group">
-              <label className="form-label required">Employment Type</label>
-              <select className="form-select" name="employment_type" defaultValue={initialValues.employment_type || ""} required>
-                <option value="">Select Type</option>
-                <option value="fulltime">Full-Time</option>
-                <option value="parttime">Part-Time</option>
-                <option value="contract">Contract</option>
-                <option value="intern">Intern</option>
-              </select>
-            </div>
+            {/* Employment Type (DYNAMIC) */}
+       <div className="form-group">
+  <label className="form-label required">Employment Type</label>
+
+  {/* Select + Refresh (same layout as Department) */}
+  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <select
+      className="form-select"
+      value={selectedEmploymentType}
+      onChange={handleEmploymentTypeChange}
+      required
+      style={{ flex: 1 }}
+    >
+      <option value="">Select Employment Type</option>
+
+      {employmentTypes.map((et) => (
+        <option key={et.id} value={String(et.id)}>
+          {et.name}
+        </option>
+      ))}
+
+      <option value="__add_employment_type__">
+        + Add Employment Type
+      </option>
+    </select>
+
+    {/* Refresh Button */}
+    <button
+      type="button"
+      className="btn btn-icon"
+      onClick={refreshEmploymentTypes}
+      title="Refresh Employment Type List"
+      style={{
+        background: "#f1f1f1",
+        border: "1px solid #ccc",
+        padding: "0 12px",
+        borderRadius: 6,
+        cursor: "pointer",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <i className="fa-solid fa-rotate-right"></i>
+    </button>
+  </div>
+
+  {/* Inline add UI — SAME STYLE AS DEPARTMENT */}
+  {isAddingEmploymentType && (
+    <div className="inline-add-group" style={{ marginTop: 8 }}>
+      <input
+        type="text"
+        className="form-select"
+        placeholder="Enter new employment type"
+        value={newEmploymentTypeName}
+        onChange={(e) => setNewEmploymentTypeName(e.target.value)}
+        style={{ width: "100%" }}
+      />
+
+      <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={handleConfirmAddEmploymentType}
+        >
+          Save
+        </button>
+
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={handleCancelAddEmploymentType}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )}
+</div>
+
+
 
             {/* Department with "Add Department" option + Refresh button */}
             <div className="form-group">
@@ -523,11 +587,12 @@ function EmployeeForm({ onSubmit, onSuccess, initialValues = {}, mode = "create"
                   style={{ flex: 1 }}
                 >
                   <option value="">{selectedDepartment ? "Select Designation" : "Select Department first"}</option>
-                  {(designationsByDept[selectedDepartment] || []).map((desig) => (
-                    <option key={desig} value={desig}>
-                      {desig}
-                    </option>
-                  ))}
+                 {(designationsByDept[selectedDepartment] || []).map((desig) => (
+  <option key={desig.id} value={desig.id}>
+    {desig.name}
+  </option>
+))}
+
                   {selectedDepartment && <option value="__add_desig__">+ Add Designation</option>}
                 </select>
 
@@ -552,15 +617,7 @@ function EmployeeForm({ onSubmit, onSuccess, initialValues = {}, mode = "create"
               )}
             </div>
 
-            <div className="form-group">
-              <label className="form-label required">Reporting Manager</label>
-              <select className="form-select" name="manager" defaultValue={initialValues.manager || ""} required>
-                <option value="">Select Manager</option>
-                <option value="john">John Smith - Engineering Lead</option>
-                <option value="sarah">Sarah Johnson - Marketing Director</option>
-                <option value="mike">Mike Davis - HR Manager</option>
-              </select>
-            </div>
+           
             <div className="form-group">
               <label className="form-label required">Work Location</label>
               <select className="form-select" name="location" defaultValue={initialValues.location || ""} required>
@@ -574,91 +631,7 @@ function EmployeeForm({ onSubmit, onSuccess, initialValues = {}, mode = "create"
           </div>
         </div>
 
-        {/* Visa & Pro Work */}
-        <div className="form-section">
-          <h2 className="section-title">
-            <i className="fa-solid fa-passport" />
-            Visa &amp; Pro Work
-          </h2>
-
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label required">Citizenship / Nationality</label>
-              <select className="form-select" name="citizenship" defaultValue={initialValues.citizenship || ""} required>
-                <option value="">Select Citizenship / Nationality</option>
-                <option value="usa">United States</option>
-                <option value="india">India</option>
-                <option value="uk">United Kingdom</option>
-                <option value="canada">Canada</option>
-                <option value="germany">Germany</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label required">Passport Number</label>
-              <input type="text" className="form-input" name="passport_number" required defaultValue={initialValues.passport_number || ""} />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label required">Visa / Permit Type</label>
-              <select className="form-select" name="visa_type" defaultValue={initialValues.visa_type || ""} required>
-                <option value="">Select Visa / Permit Type</option>
-                <option value="h1b">H1B</option>
-                <option value="l1">L1</option>
-                <option value="b1b2">B1/B2</option>
-                <option value="work_permit">Work Permit</option>
-                <option value="ict">Intra-company Transfer</option>
-                <option value="resident">Resident Permit</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label required">Visa / Permit Number</label>
-              <input type="text" className="form-input" name="visa_number" required defaultValue={initialValues.visa_number || ""} />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label required">Country of Work (Visa)</label>
-              <select className="form-select" name="visa_country" defaultValue={initialValues.visa_country || ""} required>
-                <option value="">Select Country of Work</option>
-                <option value="usa">United States</option>
-                <option value="india">India</option>
-                <option value="uk">United Kingdom</option>
-                <option value="canada">Canada</option>
-                <option value="germany">Germany</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label required">Visa Issue Date</label>
-              <input type="date" className="form-input" name="visa_issue_date" required defaultValue={initialValues.visa_issue_date || ""} />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label required">Visa Expiry Date</label>
-              <input type="date" className="form-input" name="visa_expiry_date" required defaultValue={initialValues.visa_expiry_date || ""} />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label required">Visa Status</label>
-              <select className="form-select" name="visa_status" defaultValue={initialValues.visa_status || ""} required>
-                <option value="">Select Status</option>
-                <option value="valid">Valid</option>
-                <option value="expiring_soon">Expiring Soon</option>
-                <option value="expired">Expired</option>
-                <option value="applied">Applied</option>
-                <option value="not_required">Not Required</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="form-group full-width" style={{ marginTop: 20 }}>
-            <label className="form-label">Visa / Pro Work Notes</label>
-            <textarea className="form-textarea" name="visa_notes" rows={3} placeholder="Any additional notes on visa processing, PRO work, dependents, renewal reminders, etc." defaultValue={initialValues.visa_notes || ""}></textarea>
-          </div>
-        </div>
+      
 
         {/* Documents (dynamic) */}
         <div className="form-section">

@@ -1,13 +1,14 @@
-// src/pages/admin/AddDepartmentPage.jsx
+// src/pages/admin/AddEmploymentTypePage.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import "../../assets/styles/admin.css";
-import { createDepartment } from "../../api/admin/departments";
-import { useAuth } from "../../context/AuthContext";
+import {
+  createEmployementType as createEmploymentType,
+} from "../../api/admin/employement_type";
 
-function AddDepartmentPage() {
+function AddEmploymentTypePage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [openSection] = useState("organization");
 
@@ -16,14 +17,13 @@ function AddDepartmentPage() {
   const [error, setError] = useState(null);
 
   const navigate = useNavigate();
-  const { logout } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("Please enter a department name.");
+      setError("Please enter an employment type name.");
       return;
     }
 
@@ -31,36 +31,36 @@ function AddDepartmentPage() {
     setSaving(true);
 
     try {
-      console.log("SENDING CREATE DEPARTMENT REQUEST:", { name: trimmed });
+      console.log("SENDING CREATE EMPLOYMENT TYPE REQUEST:", {
+        name: trimmed,
+      });
 
-      await createDepartment(trimmed);
+      await createEmploymentType(trimmed);
 
-      // ✅ success → go back to list
-      navigate("/admin/departments", { replace: true });
+      // ✅ Success → go to list page
+      navigate("/admin/employment-type", { replace: true });
     } catch (err) {
-      console.error("CREATE DEPARTMENT FAILED:", err);
+      console.error("CREATE EMPLOYMENT TYPE FAILED:", err);
 
+      let message = "Failed to add employment type.";
       const status = err?.response?.status;
       const respData = err?.response?.data;
 
-      // 🔐 Session expired / unauthorized
       if (status === 401 || status === 403) {
-        setError(
-          respData?.detail || "Session expired. Please sign in again."
-        );
-
-        // optional but recommended
-        logout();
-        navigate("/", { replace: true });
-        return;
+        message =
+          respData?.detail || "Session expired. Please sign in again.";
+      } else if (err.response) {
+        message =
+          respData?.detail ||
+          respData?.error ||
+          (Array.isArray(respData?.non_field_errors) &&
+            respData.non_field_errors[0]) ||
+          "Failed to add employment type. Please check your input.";
+      } else if (err.request) {
+        message = "No response from server. Check if backend is running.";
+      } else {
+        message = err.message || message;
       }
-
-      let message =
-        respData?.detail ||
-        respData?.error ||
-        (Array.isArray(respData?.non_field_errors) &&
-          respData.non_field_errors[0]) ||
-        "Failed to add department. Please try again.";
 
       setError(message);
     } finally {
@@ -82,8 +82,8 @@ function AddDepartmentPage() {
         <div className="the_line" />
 
         <div className="page-title">
-          <h3>Add Department</h3>
-          <p className="subtitle">Create a new department.</p>
+          <h3>Add Employment Type</h3>
+          <p className="subtitle">Create a new employment type.</p>
         </div>
 
         <div className="card">
@@ -95,13 +95,13 @@ function AddDepartmentPage() {
             )}
 
             <div className="designation-page-form-row">
-              <label>Department Name</label>
+              <label>Employment Type Name</label>
               <input
                 className="designation-page-form-input"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Marketing"
+                placeholder="e.g. Full Time"
               />
             </div>
 
@@ -117,13 +117,13 @@ function AddDepartmentPage() {
                 className="btn btn-primary"
                 disabled={saving}
               >
-                {saving ? "Saving..." : "Add Department"}
+                {saving ? "Saving..." : "Add Employment Type"}
               </button>
 
               <button
                 type="button"
                 className="btn btn-ghost"
-                onClick={() => navigate("/admin/departments")}
+                onClick={() => navigate("/admin/employment-type")}
               >
                 Cancel
               </button>
@@ -140,4 +140,4 @@ function AddDepartmentPage() {
   );
 }
 
-export default AddDepartmentPage;
+export default AddEmploymentTypePage;

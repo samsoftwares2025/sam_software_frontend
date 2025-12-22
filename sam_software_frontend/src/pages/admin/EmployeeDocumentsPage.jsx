@@ -1,174 +1,183 @@
 // src/pages/admin/EmployeeDocumentsPage.jsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import "../../assets/styles/admin.css";
+import {
+  getEmployeeDocuments,
+  filterEmployeeDocuments,
+} from "../../api/admin/employees";
 
-// Same rows as your HTML table
-const EMPLOYEE_VISA_RECORDS = [
-  {
-    id: "#EMP-1001",
-    name: "John Smith",
-    subTitle: "Senior Software Engineer • Engineering",
-    department: "Engineering",
-    citizenship: "India",
-    visaType: "H1B",
-    visaNumber: "H1B-2022-00123",
-    countryOfWork: "USA",
-    issueDate: "2022-01-10",
-    expiryDate: "2025-01-09",
-    status: "Valid",
-  },
-  {
-    id: "#EMP-1002",
-    name: "Sarah Johnson",
-    subTitle: "Marketing Specialist • Marketing",
-    department: "Marketing",
-    citizenship: "USA",
-    visaType: "B1/B2",
-    visaNumber: "B1B2-2019-45567",
-    countryOfWork: "USA",
-    issueDate: "2019-05-01",
-    expiryDate: "2025-02-15",
-    status: "Expiring Soon",
-  },
-  {
-    id: "#EMP-1003",
-    name: "Mike Davis",
-    subTitle: "HR Manager • HR",
-    department: "HR",
-    citizenship: "UK",
-    visaType: "Work Permit",
-    visaNumber: "WP-UK-2020-99881",
-    countryOfWork: "UK",
-    issueDate: "2020-03-01",
-    expiryDate: "2026-02-28",
-    status: "Valid",
-  },
-  {
-    id: "#EMP-1004",
-    name: "Emily Carter",
-    subTitle: "Account Executive • Sales",
-    department: "Sales",
-    citizenship: "Canada",
-    visaType: "Work Permit",
-    visaNumber: "WP-CA-2018-33221",
-    countryOfWork: "Canada",
-    issueDate: "2018-01-01",
-    expiryDate: "2021-12-31",
-    status: "Expired",
-  },
-  {
-    id: "#EMP-1005",
-    name: "Rahul Sharma",
-    subTitle: "DevOps Engineer • Engineering",
-    department: "Engineering",
-    citizenship: "India",
-    visaType: "H1B",
-    visaNumber: "H1B-2025-APPL",
-    countryOfWork: "USA",
-    issueDate: "—",
-    expiryDate: "—",
-    status: "Applied",
-  },
-  {
-    id: "#EMP-1006",
-    name: "Oliver Brown",
-    subTitle: "Financial Analyst • Finance",
-    department: "Finance",
-    citizenship: "Germany",
-    visaType: "Intra-company Transfer",
-    visaNumber: "ICT-DE-2023-77889",
-    countryOfWork: "Germany",
-    issueDate: "2023-04-01",
-    expiryDate: "2026-03-31",
-    status: "Valid",
-  },
-  {
-    id: "#EMP-1007",
-    name: "Sophia Lee",
-    subTitle: "Sales Intern • Sales",
-    department: "Sales",
-    citizenship: "USA",
-    visaType: "B1/B2",
-    visaNumber: "B1B2-2017-11442",
-    countryOfWork: "USA",
-    issueDate: "2017-07-15",
-    expiryDate: "2022-07-14",
-    status: "Expired",
-  },
-  {
-    id: "#EMP-1008",
-    name: "Priya Nair",
-    subTitle: "HR Executive • HR",
-    department: "HR",
-    citizenship: "India",
-    visaType: "Work Permit",
-    visaNumber: "WP-IN-2024-55511",
-    countryOfWork: "India",
-    issueDate: "2024-01-01",
-    expiryDate: "2027-12-31",
-    status: "Valid",
-  },
-];
+/* ===============================
+   Client-side filters helper
+================================ */
+const applyClientSideFilters = (
+  rows,
+  department,
+  country,
+  visaType
+) => {
+  return rows.filter((r) => {
+    if (department && r.department !== department) return false;
+    if (country && r.country_of_work !== country) return false;
+    if (visaType && r.visa_type !== visaType) return false;
+    return true;
+  });
+};
 
-function VisaProWorkPage() {
+function EmployeeDocumentsPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [openSection, setOpenSection] = useState("employees");
 
+  const [documents, setDocuments] = useState([]);
+
+  /* 🔹 filter master values */
+  const [departments, setDepartments] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [visaTypes, setVisaTypes] = useState([]);
+  const [statuses, setStatuses] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  /* 🔹 filters */
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("");
   const [filterCountry, setFilterCountry] = useState("");
   const [filterVisaType, setFilterVisaType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
+  /* 🔹 pagination */
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(8);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
   const navigate = useNavigate();
 
-  const handleMenuClick = () => setIsSidebarOpen((prev) => !prev);
-  const handleOverlayClick = () => setIsSidebarOpen(false);
+  /* ===============================
+     MASTER LOAD
+  ================================ */
+  const loadDocuments = (pageNo = 1) => {
+    setLoading(true);
+    setError(null);
 
+    getEmployeeDocuments({
+      page: pageNo,
+      page_size: pageSize,
+    })
+      .then((resp) => {
+        const rows = resp?.users_data || [];
+
+        setDocuments(rows);
+        setTotalCount(resp?.total_count || 0);
+        setTotalPages(resp?.total_pages || 1);
+
+        /* 🔹 extract filter masters */
+        setDepartments([
+          ...new Set(rows.map((r) => r.department).filter(Boolean)),
+        ]);
+
+        setCountries([
+          ...new Set(rows.map((r) => r.country_of_work).filter(Boolean)),
+        ]);
+
+        setVisaTypes([
+          ...new Set(rows.map((r) => r.visa_type).filter(Boolean)),
+        ]);
+
+        setStatuses([
+          ...new Set(rows.map((r) => r.status).filter(Boolean)),
+        ]);
+      })
+      .catch(() => setError("Unable to load employee documents."))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadDocuments(1);
+  }, []);
+
+  /* ===============================
+     FILTERING
+  ================================ */
+  useEffect(() => {
+    setPage(1);
+    setLoading(true);
+
+    filterEmployeeDocuments({
+      search: searchTerm,
+      status: filterStatus,
+      page: 1,
+      page_size: pageSize,
+    })
+      .then((resp) => {
+        let rows = resp?.users_data || [];
+
+        rows = applyClientSideFilters(
+          rows,
+          filterDepartment,
+          filterCountry,
+          filterVisaType
+        );
+
+        setDocuments(rows);
+        setTotalCount(rows.length);
+        setTotalPages(Math.ceil(rows.length / pageSize) || 1);
+      })
+      .catch(() => setError("Unable to filter documents."))
+      .finally(() => setLoading(false));
+  }, [searchTerm, filterDepartment, filterCountry, filterVisaType, filterStatus]);
+
+  /* ===============================
+     PAGE CHANGE
+  ================================ */
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages) return;
+
+    setPage(newPage);
+    setLoading(true);
+
+    filterEmployeeDocuments({
+      search: searchTerm,
+      status: filterStatus,
+      page: newPage,
+      page_size: pageSize,
+    })
+      .then((resp) => {
+        let rows = resp?.users_data || [];
+
+        rows = applyClientSideFilters(
+          rows,
+          filterDepartment,
+          filterCountry,
+          filterVisaType
+        );
+
+        setDocuments(rows);
+        setTotalCount(rows.length);
+        setTotalPages(Math.ceil(rows.length / pageSize) || 1);
+      })
+      .finally(() => setLoading(false));
+  };
+
+  /* ===============================
+     HELPERS
+  ================================ */
   const handleClearFilters = () => {
     setSearchTerm("");
     setFilterDepartment("");
     setFilterCountry("");
     setFilterVisaType("");
     setFilterStatus("");
+    setPage(1);
+    loadDocuments(1);
   };
 
   const handleAddEmployee = () => {
-    // Same behavior as HTML redirect to add_employee.html
     navigate("/admin/add-employee");
   };
-
-  const filteredRows = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-
-    return EMPLOYEE_VISA_RECORDS.filter((row) => {
-      const rowText = `${row.id} ${row.name} ${row.subTitle} ${row.department} ${row.citizenship} ${row.visaType} ${row.visaNumber} ${row.countryOfWork} ${row.issueDate} ${row.expiryDate} ${row.status}`.toLowerCase();
-
-      const matchesSearch = !term || rowText.includes(term);
-      const matchesDept =
-        !filterDepartment || row.department === filterDepartment;
-      const matchesCountry =
-        !filterCountry || row.countryOfWork === filterCountry;
-      const matchesVisa =
-        !filterVisaType || row.visaType === filterVisaType;
-      const matchesStatus =
-        !filterStatus || row.status === filterStatus;
-
-      return (
-        matchesSearch &&
-        matchesDept &&
-        matchesCountry &&
-        matchesVisa &&
-        matchesStatus
-      );
-    });
-  }, [searchTerm, filterDepartment, filterCountry, filterVisaType, filterStatus]);
-
-  const totalCount = EMPLOYEE_VISA_RECORDS.length;
-  const visibleCount = filteredRows.length;
 
   const getStatusStyle = (status) => {
     if (status === "Valid")
@@ -177,13 +186,17 @@ function VisaProWorkPage() {
       return { color: "#c27c0e", fontWeight: 600 };
     if (status === "Applied")
       return { color: "#2563eb", fontWeight: 600 };
-    // Expired / others
     return { color: "#6b7280", fontWeight: 600 };
   };
 
+  const startRow = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endRow = Math.min(page * pageSize, totalCount);
+
+  /* ===============================
+     RENDER
+  ================================ */
   return (
     <div className="container">
-      {/* Sidebar */}
       <Sidebar
         isMobileOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -191,110 +204,80 @@ function VisaProWorkPage() {
         setOpenSection={setOpenSection}
       />
 
-      {/* Main Area */}
       <main className="main">
-        <Header onMenuClick={handleMenuClick} />
-
+        <Header onMenuClick={() => setIsSidebarOpen((p) => !p)} />
         <div className="the_line" />
 
         <div className="page-title">
-          <h3>Employee Visa &amp; Pro Work</h3>
+          <h3>Employee Visa & Pro Work</h3>
           <p className="subtitle">
-            Track and manage employee visa, work permits and professional work
-            authorization details.
+            Track and manage visa, work permit and professional authorization.
           </p>
         </div>
 
-        {/* FILTERS BAR */}
+        {/* FILTERS */}
         <div className="filters-container">
           <div className="filters-left">
             <div className="search-input">
               <i className="fa-solid fa-magnifying-glass" />
               <input
-                type="text"
-                id="searchInput"
-                placeholder="Search by name, ID, passport, visa no..."
+                placeholder="Search employees..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
             <select
-              id="filterDepartment"
               className="filter-select"
               value={filterDepartment}
               onChange={(e) => setFilterDepartment(e.target.value)}
             >
               <option value="">All Departments</option>
-              <option value="Engineering">Engineering</option>
-              <option value="Marketing">Marketing</option>
-              <option value="HR">HR</option>
-              <option value="Sales">Sales</option>
-              <option value="Finance">Finance</option>
+              {departments.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
             </select>
 
             <select
-              id="filterCountry"
               className="filter-select"
               value={filterCountry}
               onChange={(e) => setFilterCountry(e.target.value)}
             >
               <option value="">All Countries</option>
-              <option value="USA">USA</option>
-              <option value="India">India</option>
-              <option value="UK">UK</option>
-              <option value="Canada">Canada</option>
-              <option value="Germany">Germany</option>
+              {countries.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
             </select>
 
             <select
-              id="filterVisaType"
               className="filter-select"
               value={filterVisaType}
               onChange={(e) => setFilterVisaType(e.target.value)}
             >
               <option value="">All Visa Types</option>
-              <option value="H1B">H1B</option>
-              <option value="L1">L1</option>
-              <option value="B1/B2">B1/B2</option>
-              <option value="Work Permit">Work Permit</option>
-              <option value="Intra-company Transfer">
-                Intra-company Transfer
-              </option>
+              {visaTypes.map((v) => (
+                <option key={v} value={v}>{v}</option>
+              ))}
             </select>
 
             <select
-              id="filterStatus"
               className="filter-select"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
               <option value="">All Status</option>
-              <option value="Valid">Valid</option>
-              <option value="Expiring Soon">Expiring Soon</option>
-              <option value="Expired">Expired</option>
-              <option value="Applied">Applied</option>
+              {statuses.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
             </select>
           </div>
 
           <div className="filters-right">
-            <button
-              className="btn btn-ghost"
-              id="clearFiltersBtn"
-              type="button"
-              onClick={handleClearFilters}
-            >
-              <i className="fa-solid fa-filter-circle-xmark" />
-              Clear Filters
+            <button className="btn btn-ghost" onClick={handleClearFilters}>
+              <i className="fa-solid fa-filter-circle-xmark" /> Clear Filters
             </button>
-            <button
-              className="btn btn-primary"
-              id="addVisaBtn"
-              type="button"
-              onClick={handleAddEmployee}
-            >
-              <i className="fa-solid fa-user-plus" />
-              Add Employee
+            <button className="btn btn-primary" onClick={handleAddEmployee}>
+              <i className="fa-solid fa-user-plus" /> Add Employee
             </button>
           </div>
         </div>
@@ -303,129 +286,99 @@ function VisaProWorkPage() {
         <div className="table-container">
           <div className="table-header-bar">
             <h4>
-              Visa &amp; Pro Work Records{" "}
-              <span className="badge-pill" id="employeeCountBadge">
-                Total: {visibleCount}
-              </span>
+              Visa & Pro Work Records{" "}
+              <span className="badge-pill">Total: {totalCount}</span>
             </h4>
           </div>
 
-          <div className="data-table-wrapper">
-            <table className="data-table" id="employeeTable">
-              <thead>
-                <tr>
-                  <th>Employee ID</th>
-                  <th>Employee</th>
-                  <th>Citizenship</th>
-                  <th>Visa / Permit Type</th>
-                  <th>Visa / Permit No.</th>
-                  <th>Country of Work</th>
-                  <th>Issue Date</th>
-                  <th>Expiry Date</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+          {loading ? (
+            <div style={{ padding: "1rem" }}>Loading documents...</div>
+          ) : error ? (
+            <div style={{ padding: "1rem", color: "orange" }}>{error}</div>
+          ) : (
+            <>
+              <div className="data-table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Employee ID</th>
+                      <th>Employee</th>
+                      <th>Visa Type</th>
+                      <th>Visa No.</th>
+                      <th>Country</th>
+                      <th>Issue Date</th>
+                      <th>Expiry Date</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {documents.map((row) => (
+                      <tr key={row.id}>
+                        <td>{row.employee_id}</td>
+                        <td>{row.name}</td>
+                        <td>{row.visa_type}</td>
+                        <td>{row.visa_number}</td>
+                        <td>{row.country_of_work}</td>
+                        <td>{row.issue_date || "-"}</td>
+                        <td>{row.expiry_date || "-"}</td>
+                        <td>
+                          <span style={getStatusStyle(row.status)}>
+                            {row.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
 
-              <tbody>
-                {filteredRows.map((row) => (
-                  <tr
-                    key={row.id}
-                    data-department={row.department}
-                    data-country={row.countryOfWork}
-                    data-visa-type={row.visaType}
-                    data-status={row.status}
+                    {documents.length === 0 && (
+                      <tr>
+                        <td colSpan={8} style={{ textAlign: "center" }}>
+                          No records found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* PAGINATION */}
+              <div className="pagination-wrapper">
+                <div>
+                  Showing {startRow} to {endRow} of {totalCount} records
+                </div>
+
+                <div className="pagination">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => handlePageChange(page - 1)}
                   >
-                    <td>{row.id}</td>
-                    <td>
-                      <div className="emp-name">{row.name}</div>
-                      <div className="emp-sub">{row.subTitle}</div>
-                    </td>
-                    <td>{row.citizenship}</td>
-                    <td>{row.visaType}</td>
-                    <td>{row.visaNumber}</td>
-                    <td>{row.countryOfWork}</td>
-                    <td>{row.issueDate}</td>
-                    <td>{row.expiryDate}</td>
-                    <td>
-                      <span style={getStatusStyle(row.status)}>
-                        {row.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="table-actions">
-                        <button
-                          className="icon-btn view"
-                          title="View Details"
-                          type="button"
-                        >
-                          <i className="fa-solid fa-eye" />
-                        </button>
-                        <button
-                          className="icon-btn edit"
-                          title="Edit Visa / Pro Work"
-                          type="button"
-                        >
-                          <i className="fa-solid fa-pen" />
-                        </button>
-                        <button
-                          className="icon-btn delete"
-                          title="Delete Record"
-                          type="button"
-                        >
-                          <i className="fa-solid fa-trash" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                    <i className="fa-solid fa-angle-left" />
+                  </button>
 
-                {visibleCount === 0 && (
-                  <tr>
-                    <td
-                      colSpan={10}
-                      style={{ textAlign: "center", padding: "1.5rem" }}
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i + 1}
+                      className={page === i + 1 ? "active-page" : ""}
+                      disabled={page === i + 1}
+                      onClick={() => handlePageChange(i + 1)}
                     >
-                      No visa or pro work records match the selected filters.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                      {i + 1}
+                    </button>
+                  ))}
 
-          <div className="table-footer">
-            <div id="tableInfo">
-              Showing 1 to {visibleCount} of {totalCount} records
-            </div>
-            <div className="pagination">
-              <button disabled title="Previous page" type="button">
-                <i className="fa-solid fa-angle-left" />
-              </button>
-              <button className="active-page" type="button">
-                1
-              </button>
-              <button disabled type="button">
-                2
-              </button>
-              <button disabled title="Next page" type="button">
-                <i className="fa-solid fa-angle-right" />
-              </button>
-            </div>
-          </div>
+                  <button
+                    disabled={page === totalPages}
+                    onClick={() => handlePageChange(page + 1)}
+                  >
+                    <i className="fa-solid fa-angle-right" />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </main>
-
-      {/* mobile sidebar overlay */}
-      <div
-        id="sidebarOverlay"
-        className={`sidebar-overlay ${isSidebarOpen ? "show" : ""}`}
-        tabIndex={-1}
-        aria-hidden={!isSidebarOpen}
-        onClick={handleOverlayClick}
-      />
     </div>
   );
 }
 
-export default VisaProWorkPage;
+export default EmployeeDocumentsPage;
