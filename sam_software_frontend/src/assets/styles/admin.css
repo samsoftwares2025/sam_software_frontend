@@ -1,4 +1,15 @@
 
+/* login page */
+
+/* Mobile screens only */
+@media (max-width: 768px) {
+  .login-left {
+    text-align: center;
+  }
+}
+
+
+
 .nav-icon {
     color: #05A6F0;
     font-size: 18px;
@@ -47,9 +58,8 @@ body {
 
 /* Layout */
 .container {
-    display: flex;
-    min-height: 100vh;
-    max-width: 3800px;
+     display: flex;
+  height: 100vh;      /* 🔑 fixed viewport height */
 }
 
 aside.sidebar {
@@ -1686,3 +1696,642 @@ table.data-table tbody tr:hover {
     justify-content: center;
   }
 }
+
+
+
+
+
+
+
+/* ========================= MY PROFILE PAGE STYLES ========================= */
+.profile-photo {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-2), var(--primary-1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: white;
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.profile-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.profile-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.profile-card {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  padding: 30px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-left: 5px solid var(--primary-2);
+}
+
+.profile-card-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.profile-photo {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-2), var(--primary-1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 36px;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(66, 165, 245, 0.25);
+  flex-shrink: 0;
+}
+
+.profile-card-left h2 {
+  font-size: 28px;
+  margin: 0 0 8px 0;
+  color: var(--text);
+}
+
+.profile-card-left p {
+  margin: 4px 0;
+  color: var(--text-light);
+  font-size: 15px;
+}
+
+.profile-card-left p:first-of-type {
+  font-size: 18px;
+  color: var(--primary-1);
+  font-weight: 600;
+}
+
+.info-card {
+  padding: 24px;
+  background: #ffffff;
+  border-top: 3px solid var(--primary-2);
+  display: flex;
+  flex-direction: column;
+  transition: var(--transition);
+     word-break: break-word;
+
+}
+
+.info-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.info-card h3 {
+  font-size: 18px;
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--muted-border);
+  color: var(--primary-1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-card h3::before {
+  content: "•";
+  color: var(--primary-2);
+  font-size: 24px;
+}
+
+.info-card p {
+  margin: 10px 0;
+  font-size: 15px;
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+}
+
+.info-card b {
+  min-width: 160px;
+  color: var(--text);
+  font-weight: 600;
+  display: inline-block;
+}
+
+.info-card span {
+  color: var(--text-light);
+  flex: 1;
+}
+
+/* Responsive styles for My Profile page */
+@media (max-width: 992px) {
+  .profile-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .profile-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 24px;
+  }
+  
+  .profile-card-left {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+  
+  .info-card p {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .info-card b {
+    min-width: auto;
+    margin-bottom: 2px;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .profile-photo {
+    width: 80px;
+    height: 80px;
+    font-size: 28px;
+  }
+  
+  .profile-card-left h2 {
+    font-size: 24px;
+  }
+  
+  .info-card {
+    padding: 20px;
+  }
+  
+  .info-card h3 {
+    font-size: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .info-card p {
+    font-size: 14px;
+    margin: 8px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-card {
+    padding: 20px;
+  }
+  
+  .profile-photo {
+    width: 70px;
+    height: 70px;
+    font-size: 24px;
+  }
+  
+  .profile-card-left h2 {
+    font-size: 22px;
+  }
+  
+  .info-card {
+    padding: 16px;
+  }
+  
+  .info-card h3 {
+    font-size: 15px;
+  }
+}
+
+
+
+
+
+
+
+
+/* ===============================
+   TOP SUMMARY GRID
+================================ */
+.top-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.card h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+
+.card-amount-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.small {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.big {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0.25rem 0;
+}
+
+.sub {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.mini-wrap {
+  background: #f3f4f6;
+  padding: 0.75rem;
+  border-radius: 50%;
+  color: #374151;
+}
+
+
+
+
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-card {
+  background: #fff;
+  padding: 30px;
+  border-radius: 14px;
+  width: 380px;
+  text-align: center;
+  animation: scaleIn 0.3s ease;
+}
+
+.success-icon {
+  font-size: 60px;
+  color: #22c55e;
+  margin-bottom: 15px;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+
+
+
+
+
+
+
+
+/* ===============================
+   DOCUMENT GRID
+================================ */
+
+/* ===============================
+   FILE PREVIEW (NON-IMAGE)
+================================ */
+.doc-file-preview {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px dashed #e5e7eb;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.file-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.file-info {
+  flex: 1;
+}
+
+.file-name {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.file-actions {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Buttons */
+.btn-view,
+.btn-download {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* View */
+.btn-view {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.btn-view:hover {
+  background: #1d4ed8;
+}
+
+/* Download */
+.btn-download {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.btn-download:hover {
+  background: #e5e7eb;
+}
+
+.documents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+/* ===============================
+   DOCUMENT CARD
+================================ */
+.document-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+
+/* ===============================
+   CARD HEADER
+================================ */
+.doc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.doc-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  text-transform: capitalize;
+}
+
+/* ===============================
+   STATUS BADGES
+================================ */
+.status {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status.valid {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status.info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status.muted {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* ===============================
+   DOCUMENT DETAILS
+================================ */
+.doc-details {
+  font-size: 0.85rem;
+  color: #374151;
+  margin-bottom: 0.75rem;
+}
+
+.doc-details p {
+  margin: 0.25rem 0;
+}
+
+.doc-details strong {
+  color: #111827;
+}
+
+/* ===============================
+   NOTE
+================================ */
+.doc-note {
+  background: #f9fafb;
+  border-left: 4px solid #6366f1;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+/* ===============================
+   DOCUMENT IMAGES
+================================ */
+.doc-images {
+  position: relative;   /* 👈 REQUIRED */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.75rem;
+}
+
+.doc-images img {
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  transition: transform 0.15s ease;
+}
+
+
+/* ===============================
+   NO IMAGES
+================================ */
+.no-images {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-align: center;
+  padding: 0.75rem;
+  border: 1px dashed #e5e7eb;
+  border-radius: 6px;
+}
+
+/* ===============================
+   EMPTY STATE
+================================ */
+.empty-state {
+  background: #f9fafb;
+  border: 1px dashed #e5e7eb;
+  border-radius: 8px;
+  text-align: center;
+  color: #6b7280;
+}
+
+/* ===============================
+   IMAGE WRAPPER
+================================ */
+.doc-image-wrapper {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+    width: 100%;
+
+}
+
+/* Image */
+.doc-image-wrapper img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  display: block;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+/* ===============================
+   IMAGE OVERLAY
+================================ */
+.doc-image-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  display: flex;
+  justify-content: space-between; /* 👈 left & right */
+  align-items: center;
+
+  padding: 8px 10px;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.6),
+    rgba(0, 0, 0, 0.15)
+  );
+
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+
+
+/* Show overlay on hover */
+.doc-image-wrapper:hover .doc-image-overlay {
+  opacity: 1;
+}
+
+/* ===============================
+   IMAGE ACTION BUTTONS
+================================ */
+.doc-image-btn {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: none;
+  display: flex;
+ 
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+/* ICON STYLE */
+.doc-image-btn i {
+  font-size: 16px;
+  color: #111827; /* 👈 SAME COLOR FOR BOTH ICONS */
+}
+
+/* HOVER EFFECT */
+
+
+.actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* adjust spacing here */
+}
+
+.status-pill {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-active {
+  color: #0f5132;
+  background-color: #d1e7dd;
+}
+
+.status-inactive {
+  color: #842029;
+  background-color: #f8d7da;
+}
+
+

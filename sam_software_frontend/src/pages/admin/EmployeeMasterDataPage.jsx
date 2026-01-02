@@ -3,17 +3,26 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import "../../assets/styles/admin.css";
+import { getDepartments } from "../../api/admin/departments";
 import {
   getEmployeeMasterData,
   filterEmployeeMasterData,
+  deleteEmployee,
+  updateEmployee,
 } from "../../api/admin/employees";
 
 function EmployeeMasterDataPage() {
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [openSection, setOpenSection] = useState("employees");
 
   const [employees, setEmployees] = useState([]);
-  const [departments, setDepartments] = useState([]); // ✅ NEW
+  const [departments, setDepartments] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -21,7 +30,6 @@ function EmployeeMasterDataPage() {
   const [filterDepartment, setFilterDepartment] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
-  // 🔹 Pagination state
   const [page, setPage] = useState(1);
   const [pageSize] = useState(8);
   const [totalCount, setTotalCount] = useState(0);
@@ -29,9 +37,23 @@ function EmployeeMasterDataPage() {
 
   const navigate = useNavigate();
 
-  // ==============================
-  // Load employee list (INITIAL)
-  // ==============================
+  /* ==============================
+     LOAD DEPARTMENTS (MASTER DATA)
+  ============================== */
+  useEffect(() => {
+    getDepartments()
+      .then((resp) => {
+        // backend usually returns { departments: [...] }
+        setDepartments(resp?.departments || []);
+      })
+      .catch(() => {
+        console.error("Failed to load departments");
+      });
+  }, []);
+
+  /* ==============================
+     LOAD EMPLOYEES (INITIAL)
+  ============================== */
   const loadEmployeeList = (pageNo = 1) => {
     setLoading(true);
     setError(null);
@@ -41,17 +63,9 @@ function EmployeeMasterDataPage() {
       page_size: pageSize,
     })
       .then((resp) => {
-        const users = resp?.users_data || [];
-
-        setEmployees(users);
+        setEmployees(resp?.users_data || []);
         setTotalCount(resp?.total_count || 0);
         setTotalPages(resp?.total_pages || 1);
-
-        // ✅ Extract departments ONCE
-        const uniqueDepartments = [
-          ...new Set(users.map((e) => e.department).filter(Boolean)),
-        ];
-        setDepartments(uniqueDepartments);
       })
       .catch(() => {
         setError("Unable to load employee master data.");
@@ -59,14 +73,13 @@ function EmployeeMasterDataPage() {
       .finally(() => setLoading(false));
   };
 
-  // Initial load
   useEffect(() => {
     loadEmployeeList(1);
   }, []);
 
-  // ==============================
-  // Filtering
-  // ==============================
+  /* ==============================
+     FILTERING
+  ============================== */
   useEffect(() => {
     setPage(1);
 
@@ -80,7 +93,7 @@ function EmployeeMasterDataPage() {
     filterEmployeeMasterData({
       search: searchTerm,
       department: filterDepartment,
-      status: filterStatus,
+      is_active: filterStatus,
       page: 1,
       page_size: pageSize,
     })
@@ -95,9 +108,9 @@ function EmployeeMasterDataPage() {
       .finally(() => setLoading(false));
   }, [searchTerm, filterDepartment, filterStatus]);
 
-  // ==============================
-  // Page change
-  // ==============================
+  /* ==============================
+     PAGINATION
+  ============================== */
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > totalPages) return;
 
@@ -107,7 +120,7 @@ function EmployeeMasterDataPage() {
     const payload = {
       search: searchTerm,
       department: filterDepartment,
-      status: filterStatus,
+      is_active: filterStatus,
       page: newPage,
       page_size: pageSize,
     };
@@ -126,14 +139,11 @@ function EmployeeMasterDataPage() {
       .finally(() => setLoading(false));
   };
 
-  // ==============================
-  // Helpers
-  // ==============================
-  const getStatusClassName = (status) => {
-    if (status === "Active") return "status-pill status-active";
-    if (status === "Probation") return "status-pill status-probation";
-    return "status-pill status-inactive";
-  };
+  /* ==============================
+     HELPERS
+  ============================== */
+  const getStatusClassName = (isActive) =>
+    isActive ? "status-pill status-active" : "status-pill status-inactive";
 
   const handleAddEmployee = () => {
     navigate("/admin/add-employee");
@@ -144,16 +154,36 @@ function EmployeeMasterDataPage() {
     setFilterDepartment("");
     setFilterStatus("");
     setPage(1);
-    loadEmployeeList(1); // ✅ reload master data
+    loadEmployeeList(1);
   };
 
-  // Pagination info
   const startRow = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
   const endRow = Math.min(page * pageSize, totalCount);
 
-  // ==============================
-  // Render
-  // ==============================
+  /* ==============================
+     RENDER
+  ============================== */
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setEmployeeToDelete(null);
+    setDeleteError("");
+  };
+
+  const confirmDelete = async () => {
+    setDeleting(true);
+    setDeleteError("");
+
+    try {
+      await deleteEmployee(employeeToDelete.id);
+      closeDeleteModal();
+      loadEmployeeList(page);
+    } catch (err) {
+      setDeleteError("Failed to delete employee.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="container">
       <Sidebar
@@ -186,7 +216,7 @@ function EmployeeMasterDataPage() {
               />
             </div>
 
-            {/* ✅ FIXED DEPARTMENT FILTER */}
+            {/* ✅ ALL DEPARTMENTS */}
             <select
               className="filter-select"
               value={filterDepartment}
@@ -194,8 +224,8 @@ function EmployeeMasterDataPage() {
             >
               <option value="">All Departments</option>
               {departments.map((dept) => (
-                <option key={dept} value={dept}>
-                  {dept}
+                <option key={dept.id} value={dept.name}>
+                  {dept.name}
                 </option>
               ))}
             </select>
@@ -206,9 +236,8 @@ function EmployeeMasterDataPage() {
               onChange={(e) => setFilterStatus(e.target.value)}
             >
               <option value="">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Probation">Probation</option>
-              <option value="Inactive">Inactive</option>
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
             </select>
           </div>
 
@@ -249,6 +278,7 @@ function EmployeeMasterDataPage() {
                       <th>Location</th>
                       <th>Status</th>
                       <th>Joining Date</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -262,16 +292,55 @@ function EmployeeMasterDataPage() {
                         <td>{emp.designation || "-"}</td>
                         <td>{emp.work_location || "-"}</td>
                         <td>
-                          <span className={getStatusClassName(emp.status)}>
-                            ● {emp.status}
+                          <span className={getStatusClassName(emp.is_active)}>
+                            ● {emp.is_active ? "Active" : "Inactive"}
                           </span>
                         </td>
+
                         <td>
+                          {" "}
                           {emp.joining_date
                             ? new Date(emp.joining_date).toLocaleDateString(
                                 "en-GB"
                               )
-                            : "-"}
+                            : "-"}{" "}
+                        </td>
+                        <td>
+                          {" "}
+                          <div class="table-actions">
+                            <button
+                              className="icon-btn view"
+                              title="View Details"
+                              onClick={() =>
+                                navigate(`/admin/employee-profile/${emp.id}`)
+                              }
+                            >
+                              <i className="fa-solid fa-eye"></i>
+                            </button>
+
+                            <button
+                              className="icon-btn edit"
+                              title="Edit Employment"
+                              onClick={() =>
+                                navigate(
+                                  `/admin/update-employee-profile/${emp.id}`
+                                )
+                              }
+                            >
+                              <i className="fa-solid fa-pen"></i>
+                            </button>
+
+                            <button
+                              className="icon-btn delete"
+                              title="Delete Employment Record"
+                              onClick={() => {
+                                setEmployeeToDelete(emp);
+                                setShowDeleteModal(true);
+                              }}
+                            >
+                              <i className="fa-solid fa-trash"></i>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -289,46 +358,69 @@ function EmployeeMasterDataPage() {
 
               {/* PAGINATION */}
               <div className="pagination-wrapper">
-                <div id="tableInfo">
+                <div>
                   Showing {startRow} to {endRow} of {totalCount} employees
-                </div>
-
-                <div className="pagination">
-                  <button
-                    disabled={page === 1}
-                    onClick={() => handlePageChange(page - 1)}
-                  >
-                    <i className="fa-solid fa-angle-left" />
-                  </button>
-
-                  {[...Array(totalPages)].map((_, idx) => {
-                    const pageNum = idx + 1;
-                    return (
-                      <button
-                        key={pageNum}
-                        className={page === pageNum ? "active-page" : ""}
-                        disabled={page === pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-
-                  <button
-                    disabled={page === totalPages}
-                    onClick={() => handlePageChange(page + 1)}
-                  >
-                    <i className="fa-solid fa-angle-right" />
-                  </button>
                 </div>
               </div>
             </>
           )}
         </div>
       </main>
+      {showDeleteModal && (
+        <div className="modal-backdrop" style={backdropStyle}>
+          <div className="modal" style={modalStyle}>
+            <h3>Confirm delete</h3>
+            <p>
+              Are you sure you want to delete{" "}
+              <strong>{employeeToDelete?.name}</strong>?
+            </p>
+
+            {deleteError && (
+              <div style={{ color: "orange", marginBottom: 8 }}>
+                {deleteError}
+              </div>
+            )}
+
+            <div
+              style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
+            >
+              <button
+                className="btn"
+                onClick={closeDeleteModal}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={confirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+const backdropStyle = {
+  position: "fixed",
+  inset: 0,
+  backgroundColor: "rgba(0,0,0,0.45)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 2000,
+};
+
+const modalStyle = {
+  width: 420,
+  background: "#fff",
+  padding: "1.25rem",
+  borderRadius: 8,
+  boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
+};
 
 export default EmployeeMasterDataPage;

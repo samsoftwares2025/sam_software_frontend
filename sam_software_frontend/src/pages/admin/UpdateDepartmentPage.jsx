@@ -128,18 +128,18 @@ function UpdateDepartmentPage() {
           <p className="subtitle">Update department name.</p>
         </div>
 
-        <div className="card" style={{ padding: "1.25rem", maxWidth: 720 }}>
+        <div className="card" >
           {loading ? (
             <div>Loading department details...</div>
           ) : error ? (
             <div style={{ color: "red", marginBottom: 12 }}>{error}</div>
           ) : (
             <form onSubmit={handleSubmit}>
-              <div style={{ marginBottom: 12 }}>
+              <div className="designation-page-form-row">
                 <label>Current Name</label>
                 <div style={{ marginTop: 6, marginBottom: 12 }}>
                   <input
-                    className="form-input"
+                    className="designation-page-form-input"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}

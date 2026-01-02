@@ -3,17 +3,18 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import "../../assets/styles/admin.css";
+
+import { getDepartments } from "../../api/admin/departments";
+import { getEmployementTypes } from "../../api/admin/employement_type";
 import {
   getEmployeeHistoryData,
   filterEmployeeHistoryData,
 } from "../../api/admin/employees";
 
-// 🔹 ADD helper at top (AFTER imports)
-const applyClientSideFilters = (
-  rows,
-  department,
-  employmentType
-) => {
+/* ===============================
+   Client-side filters
+================================ */
+const applyClientSideFilters = (rows, department, employmentType) => {
   return rows.filter((r) => {
     if (department && r.department !== department) return false;
     if (employmentType && r.employment_type !== employmentType) return false;
@@ -26,9 +27,13 @@ function EmploymentHistoryPage() {
   const [openSection, setOpenSection] = useState("employees");
 
   const [history, setHistory] = useState([]);
-  const [departments, setDepartments] = useState([]);          // ✅ NEW
-  const [employmentTypes, setEmploymentTypes] = useState([]);  // ✅ NEW
-  const [statuses, setStatuses] = useState([]);                // ✅ NEW
+  const [hasMounted, setHasMounted] = useState(false);
+  // ✅ MASTER DATA
+  const [departments, setDepartments] = useState([]);
+  const [employmentTypes, setEmploymentTypes] = useState([]);
+
+  // derived from data
+  const [statuses, setStatuses] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -38,17 +43,63 @@ function EmploymentHistoryPage() {
   const [filterType, setFilterType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
-  // 🔹 Pagination
   const [page, setPage] = useState(1);
   const [pageSize] = useState(8);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
   const navigate = useNavigate();
+useEffect(() => {
+  if (!hasMounted) {
+    setHasMounted(true);
+    return;
+  }
 
-  // ==============================
-  // Load history list (MASTER LOAD)
-  // ==============================
+  setPage(1);
+  setLoading(true);
+
+  filterEmployeeHistoryData({
+    search: searchTerm,
+    status: filterStatus,
+    page: 1,
+    page_size: pageSize,
+  })
+    .then((resp) => {
+      let rows = resp?.users_data || [];
+
+      rows = applyClientSideFilters(
+        rows,
+        filterDepartment,
+        filterType
+      );
+
+      setHistory(rows);
+      setTotalCount(rows.length);
+      setTotalPages(Math.ceil(rows.length / pageSize) || 1);
+    })
+    .finally(() => setLoading(false));
+
+}, [searchTerm, filterDepartment, filterType, filterStatus]);
+  /* ===============================
+     LOAD MASTER DATA
+  ================================ */
+  useEffect(() => {
+    getDepartments()
+      .then((resp) => {
+        setDepartments(resp?.departments || []);
+      })
+      .catch(() => console.error("Failed to load departments"));
+
+    getEmployementTypes()
+      .then((resp) => {
+        setEmploymentTypes(resp?.employment_types || resp || []);
+      })
+      .catch(() => console.error("Failed to load employment types"));
+  }, []);
+
+  /* ===============================
+     LOAD HISTORY (INITIAL)
+  ================================ */
   const loadHistoryList = (pageNo = 1) => {
     setLoading(true);
     setError(null);
@@ -64,15 +115,7 @@ function EmploymentHistoryPage() {
         setTotalCount(resp?.total_count || 0);
         setTotalPages(resp?.total_pages || 1);
 
-        // ✅ Extract filter master values ONCE
-        setDepartments([
-          ...new Set(rows.map((r) => r.department).filter(Boolean)),
-        ]);
-
-        setEmploymentTypes([
-          ...new Set(rows.map((r) => r.employment_type).filter(Boolean)),
-        ]);
-
+        // ✅ status can be derived safely
         setStatuses([
           ...new Set(rows.map((r) => r.status).filter(Boolean)),
         ]);
@@ -83,17 +126,16 @@ function EmploymentHistoryPage() {
       .finally(() => setLoading(false));
   };
 
-  // Initial load
-  useEffect(() => {
-    loadHistoryList(1);
-  }, []);
+useEffect(() => {
+  loadHistoryList(1);
+}, []);
 
-  // ==============================
-  // Filtering
-  // ==============================
-  useEffect(() => {
+
+  /* ===============================
+     FILTERING
+  ================================ */
+useEffect(() => {
   setPage(1);
-
   setLoading(true);
 
   filterEmployeeHistoryData({
@@ -102,69 +144,66 @@ function EmploymentHistoryPage() {
     page: 1,
     page_size: pageSize,
   })
-    .then((resp) => {
-      let rows = resp?.users_data || [];
+      .then((resp) => {
+        let rows = resp?.users_data || [];
 
-      // ✅ CLIENT-SIDE FILTERING (SAME IDEA AS MASTER)
-      rows = applyClientSideFilters(
-        rows,
-        filterDepartment,
-        filterType
-      );
+        rows = applyClientSideFilters(
+          rows,
+          filterDepartment,
+          filterType
+        );
 
-      setHistory(rows);
-      setTotalCount(rows.length);
-      setTotalPages(Math.ceil(rows.length / pageSize) || 1);
-    })
-    .catch(() => {
-      setError("Unable to filter employment history.");
-    })
-    .finally(() => setLoading(false));
-}, [searchTerm, filterDepartment, filterType, filterStatus]);
+        setHistory(rows);
+        setTotalCount(rows.length);
+        setTotalPages(Math.ceil(rows.length / pageSize) || 1);
+      })
+      .catch(() => {
+        setError("Unable to filter employment history.");
+      })
+      .finally(() => setLoading(false));
+  }, [searchTerm, filterDepartment, filterType, filterStatus]);
 
-
-  // ==============================
-  // Page change
-  // ==============================
+  /* ===============================
+     PAGINATION
+  ================================ */
   const handlePageChange = (newPage) => {
-  if (newPage < 1 || newPage > totalPages) return;
+    if (newPage < 1 || newPage > totalPages) return;
 
-  setPage(newPage);
-  setLoading(true);
+    setPage(newPage);
+    setLoading(true);
 
-  filterEmployeeHistoryData({
-    search: searchTerm,
-    status: filterStatus,
-    page: newPage,
-    page_size: pageSize,
-  })
-    .then((resp) => {
-      let rows = resp?.users_data || [];
-
-      rows = applyClientSideFilters(
-        rows,
-        filterDepartment,
-        filterType
-      );
-
-      setHistory(rows);
-      setTotalCount(rows.length);
-      setTotalPages(Math.ceil(rows.length / pageSize) || 1);
+    filterEmployeeHistoryData({
+      search: searchTerm,
+      status: filterStatus,
+      page: newPage,
+      page_size: pageSize,
     })
-    .finally(() => setLoading(false));
-};
+      .then((resp) => {
+        let rows = resp?.users_data || [];
 
+        rows = applyClientSideFilters(
+          rows,
+          filterDepartment,
+          filterType
+        );
 
-  // ==============================
-  // Helpers
-  // ==============================
+        setHistory(rows);
+        setTotalCount(rows.length);
+        setTotalPages(Math.ceil(rows.length / pageSize) || 1);
+      })
+      .finally(() => setLoading(false));
+  };
+
+  /* ===============================
+     HELPERS
+  ================================ */
   const handleClearFilters = () => {
     setSearchTerm("");
     setFilterDepartment("");
     setFilterType("");
     setFilterStatus("");
     setPage(1);
-    loadHistoryList(1); // ✅ reload master
+    loadHistoryList(1);
   };
 
   const handleAddEmployment = () => {
@@ -183,9 +222,9 @@ function EmploymentHistoryPage() {
   const startRow = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
   const endRow = Math.min(page * pageSize, totalCount);
 
-  // ==============================
-  // Render
-  // ==============================
+  /* ===============================
+     RENDER
+  ================================ */
   return (
     <div className="container">
       <Sidebar
@@ -218,29 +257,30 @@ function EmploymentHistoryPage() {
               />
             </div>
 
-            {/* ✅ FIXED FILTERS */}
+            {/* ✅ ALL DEPARTMENTS */}
             <select
               className="filter-select"
               value={filterDepartment}
               onChange={(e) => setFilterDepartment(e.target.value)}
             >
               <option value="">All Departments</option>
-              {departments.map((d) => (
-                <option key={d} value={d}>
-                  {d}
+              {departments.map((dept) => (
+                <option key={dept.id} value={dept.name}>
+                  {dept.name}
                 </option>
               ))}
             </select>
 
+            {/* ✅ ALL EMPLOYMENT TYPES */}
             <select
               className="filter-select"
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
             >
               <option value="">All Employment Types</option>
-              {employmentTypes.map((t) => (
-                <option key={t} value={t}>
-                  {t}
+              {employmentTypes.map((t, idx) => (
+                <option key={t.id ?? idx} value={t.name ?? t}>
+                  {t.name ?? t}
                 </option>
               ))}
             </select>
@@ -279,18 +319,16 @@ function EmploymentHistoryPage() {
           </div>
 
           {loading ? (
-            <div style={{ padding: "1rem" }}>
-              Loading employment history...
-            </div>
+            <div style={{ padding: "1rem" }}>Loading employment history...</div>
           ) : error ? (
             <div style={{ padding: "1rem", color: "orange" }}>{error}</div>
           ) : (
             <>
               <div className="data-table-wrapper">
-                 <table className="data-table">
+                <table className="data-table">
                   <thead>
                     <tr>
-                      <th>Order No</th>
+                      <th>#</th>
                       <th>Employee ID</th>
                       <th>Employee</th>
                       <th>Employment Type</th>
@@ -298,7 +336,7 @@ function EmploymentHistoryPage() {
                       <th>Confirmation Date</th>
                       <th>Last Working Date</th>
                       <th>Reporting Manager</th>
-                      <th>Status</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -311,32 +349,26 @@ function EmploymentHistoryPage() {
                           <td>{row.employee_id}</td>
                           <td>{row.name}</td>
                           <td>{row.employment_type}</td>
-                          <td>
-                            {row.joining_date
-                              ? new Date(row.joining_date).toLocaleDateString("en-GB")
-                              : "-"}
-                          </td>
-                          <td>
-                            {row.confirmation_date
-                              ? new Date(row.confirmation_date).toLocaleDateString("en-GB")
-                              : "-"}
-                          </td>
-                          <td>
-                            {row.last_working_date
-                              ? new Date(row.last_working_date).toLocaleDateString("en-GB")
-                              : "-"}
-                          </td>
-                          <td>
-                            <div>{row.reporting_manager || "-"}</div>
-                            <div className="contact-sub">
-                              {row.manager_designation || ""}
-                            </div>
-                          </td>
-                          <td>
-                            <span style={getStatusStyle(row.status)}>
-                              {row.status}
-                            </span>
-                          </td>
+                          <td> {row.joining_date ? new Date(row.joining_date).toLocaleDateString("en-GB") : "-"}</td>
+                          <td> {row.confirmation_date ? new Date(row.confirmation_date).toLocaleDateString("en-GB") : "-"}</td>
+                          <td> {row.last_working_date ? new Date(row.last_working_date).toLocaleDateString("en-GB") : "-"}</td>
+                          <td>{row.reporting_manager || "-"}</td>
+ <td>
+                          {" "}
+                          <div class="table-actions">
+                            <button
+                              className="icon-btn view"
+                              title="View Details"
+                              onClick={() =>
+                                navigate(`/admin/employment-history/${row.id}`)
+                              }
+                            >
+                              <i className="fa-solid fa-eye"></i>
+                            </button>
+
+                           
+                          </div>
+                        </td>                         
                         </tr>
                       );
                     })}
@@ -354,38 +386,8 @@ function EmploymentHistoryPage() {
 
               {/* PAGINATION */}
               <div className="pagination-wrapper">
-                <div id="tableInfo">
+                <div>
                   Showing {startRow} to {endRow} of {totalCount} employees
-                </div>
-
-                <div className="pagination">
-                  <button
-                    disabled={page === 1}
-                    onClick={() => handlePageChange(page - 1)}
-                  >
-                    <i className="fa-solid fa-angle-left" />
-                  </button>
-
-                  {[...Array(totalPages)].map((_, idx) => {
-                    const pageNum = idx + 1;
-                    return (
-                      <button
-                        key={pageNum}
-                        className={page === pageNum ? "active-page" : ""}
-                        disabled={page === pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-
-                  <button
-                    disabled={page === totalPages}
-                    onClick={() => handlePageChange(page + 1)}
-                  >
-                    <i className="fa-solid fa-angle-right" />
-                  </button>
                 </div>
               </div>
             </>

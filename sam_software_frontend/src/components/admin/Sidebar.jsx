@@ -1,8 +1,10 @@
 // Sidebar.jsx
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { logoutUser } from "../../api/auth";
+import { NavLink, useNavigate } from "react-router-dom"; // ✅ ADD useNavigate
 
 function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
+  const navigate = useNavigate(); // ✅ INITIALIZE navigate
   const handleSectionToggle = (sectionId) => {
     setOpenSection((prev) => (prev === sectionId ? null : sectionId));
   };
@@ -12,15 +14,39 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
 
   const submenuHidden = (id) => String(openSection !== id);
 
+  /* ================= AUTH DATA ================= */
+  const userName = localStorage.getItem("userName") || "User";
+  const userImage = localStorage.getItem("userImage");
+  const companyName = localStorage.getItem("companyName") || "Company";
+  const companyLogo = localStorage.getItem("companyLogo");
+
+  // initials fallback (AB)
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
+
   return (
     <aside
       className={`sidebar ${isMobileOpen ? "mobile-open mobile-visible" : ""}`}
       id="sidebar"
     >
+      {/* ================= COMPANY LOGO ================= */}
       <div className="logo-container">
         <a href="#" className="logo">
-          <div className="logo-icon">ABC</div>
-          <div className="logo-text">ABC Technologies</div>
+          <div className="logo-icon">
+            {companyLogo ? (
+              <img
+                src={companyLogo}
+                alt={companyName}
+                style={{ width: 36, height: 36, objectFit: "contain" }}
+              />
+            ) : (
+              initials
+            )}
+          </div>
+          <div className="logo-text">{companyName}</div>
         </a>
       </div>
 
@@ -128,23 +154,38 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
                 Employment Type
               </NavLink>
             </li>
+            <li>
+              <NavLink
+                to="/admin/roles-permissions" // 👈 your React route
+                className={({ isActive }) =>
+                  `submenu-link ${isActive ? "active-submenu" : ""}`
+                }
+              >
+                Roles & Permissions
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/admin/policies" // 👈 your React route
+                className={({ isActive }) =>
+                  `submenu-link ${isActive ? "active-submenu" : ""}`
+                }
+              >
+                Policies
+              </NavLink>
+            </li>
 
             <li>
-              <a
-                href="roles_and_permissions_listing.html"
-                className="submenu-link"
+              <NavLink
+                to="/admin/company-rules" // 👈 your React route
+                className={({ isActive }) =>
+                  `submenu-link ${isActive ? "active-submenu" : ""}`
+                }
               >
-                Roles &amp; Permissions
-              </a>
+                Company Rules
+              </NavLink>
             </li>
-            <li>
-              <a href="policies_listing.html" className="submenu-link">
-                Policies
-              </a>
-            </li>
-            <li>
-              <a className="submenu-link">Company Rules</a>
-            </li>
+
             <li>
               <a className="submenu-link">Compliance Documentation</a>
             </li>
@@ -507,7 +548,14 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
           type="button"
           title="Log out"
           aria-label="Log out"
-          onClick={onClose}
+          onClick={async () => {
+            try {
+              await logoutUser(); // 🔥 call backend + clear storage
+            } finally {
+              onClose(); // close sidebar / menu
+              window.location.href = "/"; // redirect
+            }
+          }}
         >
           <span className="nav-icon">
             <i className="fa-solid fa-right-from-bracket" />
@@ -515,12 +563,32 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
           Logout
         </button>
       </ul>
+      {/* ================= USER PROFILE ================= */}
+      <div
+        className="user-profile"
+        onClick={() => navigate("/admin/my-profile")} // ✅ NOW WORKS
+        style={{ cursor: "pointer" }}
+      >
+        <div className="user-avatar">
+          {userImage ? (
+            <img
+              src={userImage}
+              alt={userName}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                objectFit: "cover",
+              }}
+            />
+          ) : (
+            initials
+          )}
+        </div>
 
-      <div className="user-profile">
-        <div className="user-avatar">AB</div>
         <div className="user-info">
-          <h4>Abhinav B</h4>
-          <p>Admin • ID: #AD-2048</p>
+          <h4>{userName}</h4>
+          <p>Admin</p>
         </div>
       </div>
     </aside>

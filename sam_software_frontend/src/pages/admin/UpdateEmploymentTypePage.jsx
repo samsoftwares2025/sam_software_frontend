@@ -134,7 +134,7 @@ function UpdateEmployementTypePage() {
         <div className="the_line" />
 
         <div className="page-title">
-          <h3>Edit Employment Type</h3>
+          <h3>Update Employment Type</h3>
           <p className="subtitle">Update employment type details.</p>
         </div>
 

@@ -1,6 +1,11 @@
 // src/api/admin/employee.js
 import http from "../http";
 
+const getUserId = () => {
+  return localStorage.getItem("userId");
+};
+
+
 /**
  * getEmployeeMasterData
  * (Same auth pattern as departments)
@@ -29,7 +34,7 @@ export const filterEmployeeMasterData = async (payload) => {
       user_id: userId,
       search: payload?.search || "",
       department_name: payload?.department || "",
-      status: payload?.status || "",
+      is_active: payload?.is_active || "",
       page: payload?.page || 1,
       page_size: payload?.page_size || 50,
     }
@@ -83,13 +88,17 @@ export const filterEmployeeHistoryData = async (payload) => {
 /**
  * getEmployeeDocuments
  */
-export const getEmployeeDocuments = async () => {
 
-  const userId = localStorage.getItem("userId");
+export const getEmployeeDocuments = async ({ page = 1, page_size = 20 }) => {
+  const userId = localStorage.getItem("user_id");
 
   const { data } = await http.post(
     "/hr/list-employee-documents/",
-    { user_id: userId }
+    {
+      user_id: userId,
+      page,
+      page_size,
+    }
   );
 
   return data;
@@ -98,7 +107,7 @@ export const getEmployeeDocuments = async () => {
 
 
 export const filterEmployeeDocuments = async (payload) => {
-  const userId = localStorage.getItem("userId");
+  const userId = localStorage.getItem("user_id");
 
   const { data } = await http.post(
     "/hr/filter-employee-documents/",
@@ -106,13 +115,16 @@ export const filterEmployeeDocuments = async (payload) => {
       user_id: userId,
       search: payload?.search || "",
       status: payload?.status || "",
+      department_id: payload?.department_id || "",
+      country: payload?.country || "",
       page: payload?.page || 1,
-      page_size: payload?.page_size || 50,
+      page_size: payload?.page_size || 20,
     }
   );
 
   return data;
 };
+
 
 
 
@@ -136,4 +148,178 @@ export const createEmploye = async (formData) => {
   );
 
   return data;
+};
+
+
+
+// src/api/admin/employees.js
+export const getEmployeesList = async () => {
+  const token = localStorage.getItem("accessToken");
+  const userId = localStorage.getItem("user_id");
+
+  const { data } = await http.post("/hr/list-employee-master-data/", {
+    user_id: userId,
+    page: 1,
+    page_size: 500, // enough for dropdown
+  });
+
+  return data.users_data || [];
+};
+
+
+
+// ✅ FETCH EMPLOYEE BY USER ID (NEW & CORRECT)
+export const getEmployeeByUserId = async (targetUserId) => {
+  const token = localStorage.getItem("accessToken");
+  const authUserId = localStorage.getItem("user_id"); // ✅ LOGGED-IN USER
+
+  if (!token || !authUserId) {
+    throw new Error("Session expired");
+  }
+
+  const { data } = await http.post("/hr/get-employee/", {
+    user_id: authUserId,          // ✅ auth user
+    target_user_id: targetUserId  // ✅ employee to fetch
+  });
+
+  return data;
+};
+
+
+// ❌ KEEP THIS ONLY IF SOME OLD PAGE NEEDS employee_id
+export const getEmployeeById = async (employeeId) => {
+  const token = localStorage.getItem("accessToken");
+  const userId = localStorage.getItem("userId");
+
+  if (!token || !userId) {
+    throw new Error("Session expired");
+  }
+
+  const { data } = await http.post("/hr/get-employee/", {
+    user_id: userId,
+    employee_id: employeeId
+  });
+
+  return data;
+};
+
+
+
+
+export const getMyProfile = async () => {
+  // 🔍 read from all possible keys
+  const userId =
+    localStorage.getItem("user_id") ||
+    localStorage.getItem("id") ||
+    localStorage.getItem("userId");
+
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("access_token");
+
+
+  if (!userId || !token) {
+    throw new Error("Session expired. Please login again.");
+  }
+
+  const payload = {
+    user_id: userId,
+    employee_id: userId,
+    id: userId,
+  };
+
+  console.log("[getMyProfile] PAYLOAD:", payload);
+
+  const { data } = await http.post(
+    "/hr/get-employee/",
+    payload,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`, // ✅ FIXED
+      },
+    }
+  );
+
+  return data;
+};
+
+
+
+
+/**
+ * updateEmployee
+ */
+export const updateEmployee = async (formData) => {
+  const { data } = await http.post(
+    "/hr/update-employee/",
+    formData
+    ,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+  return data;
+};
+
+
+
+export const deleteEmployee = async (employeeId) => {
+  const userId = getUserId();
+
+  const payload = {
+    id: employeeId,     // ✅ CORRECT KEY
+    user_id: userId,
+  };
+
+  const { data } = await http.post(
+    "/hr/delete-employee/",
+    payload
+  );
+
+  return data;
+};
+
+
+
+
+
+/* =========================
+   GET PersonalEmploymentHistory  
+========================= */
+export const PersonalEmploymentHistory = async ({ page = 1, page_size = 50 } = {}) => {
+  const userId =
+    localStorage.getItem("user_id") ||
+    localStorage.getItem("id") ||
+    localStorage.getItem("userId");
+
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("access_token");
+
+  if (!userId || !token) {
+    return Promise.reject(
+      new Error("Session expired. Please login again.")
+    );
+  }
+
+  const payload = {
+    user_id: userId,
+    page,
+    page_size,
+  };
+
+  const response = await http.post(
+      "/users/user-employee-history/", // ✅ FIXED PATH
+
+    payload,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return response.data;
 };

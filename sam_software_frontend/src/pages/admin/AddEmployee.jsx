@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
-import EmployeeForm from "../../components/admin/EmployeeForm";
+import AddEmployeeForm from "../../components/admin/employee/AddEmployeeForm";
 import "../../assets/styles/admin.css";
 import { createEmploye } from "../../api/admin/employees";
 
@@ -21,16 +21,19 @@ function AddEmployeePage() {
 
 const handleFormSubmit = async (formData) => {
   try {
-    // 🔥 backend NEEDS user_id
     const userId = localStorage.getItem("userId");
     formData.append("user_id", userId);
 
     const response = await createEmploye(formData);
     console.log("Employee created:", response);
+
+    return response; // ✅ IMPORTANT
   } catch (error) {
     console.error("Failed to create employee:", error);
+    return { success: false };
   }
 };
+
 
 
   return (
@@ -59,7 +62,7 @@ const handleFormSubmit = async (formData) => {
           </button>
         </div>
 
-        <EmployeeForm
+        <AddEmployeeForm
           mode="create"
           onSubmit={handleFormSubmit}
         />

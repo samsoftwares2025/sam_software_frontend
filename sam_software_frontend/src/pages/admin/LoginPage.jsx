@@ -23,27 +23,51 @@ const LoginPage = () => {
     try {
       console.log("SENDING LOGIN REQUEST:", { email, password });
 
-      // 🔥 IMPORTANT: get response back
+      // 🔥 LOGIN API CALL
       const res = await loginUser(email, password);
 
       console.log("LOGIN RESPONSE:", res);
 
       // ===============================
-      // ✅ SAVE AUTH DATA (CRITICAL FIX)
+      // ✅ SAVE AUTH DATA (EXISTING)
       // ===============================
 
-      // save token (profile expects key = "token")
+      // token
       localStorage.setItem("token", res.token || res.access);
 
-      // save user id (profile expects key = "user_id")
+      // user id
       localStorage.setItem(
         "user_id",
         res.user?.id || res.user_id || res.id
       );
 
+      // ===============================
+      // ✅ SAVE USER & COMPANY INFO (NEW)
+      // ===============================
+
+      if (res.name) {
+        localStorage.setItem("userName", res.name);
+      }
+
+      if (res.user_image) {
+        localStorage.setItem("userImage", res.user_image);
+      }
+
+      if (res.company_name) {
+        localStorage.setItem("companyName", res.company_name);
+      }
+
+      if (res.company_logo) {
+        localStorage.setItem("companyLogo", res.company_logo);
+      }
+
       console.log("AFTER LOGIN STORAGE:", {
         token: localStorage.getItem("token"),
         user_id: localStorage.getItem("user_id"),
+        userName: localStorage.getItem("userName"),
+        userImage: localStorage.getItem("userImage"),
+        companyName: localStorage.getItem("companyName"),
+        companyLogo: localStorage.getItem("companyLogo"),
       });
 
       // update auth context

@@ -180,7 +180,7 @@ await updateDesignation(
         <div className="the_line" />
 
         <div className="page-title">
-          <h3>Edit Designation</h3>
+          <h3>Update Designation</h3>
           <p className="subtitle">Update designation details.</p>
         </div>
 

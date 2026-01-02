@@ -31,7 +31,6 @@ export const createDepartment = async (name) => {
  * getDepartments
  */
 export const getDepartments = async () => {
-  console.log("🔥 getDepartments CALLED");
 
   const userId = getUserId();
 

@@ -1,7 +1,21 @@
 // Header.jsx
 import React from "react";
+import { logoutUser } from "../../api/auth";
 
 function Header({ onMenuClick }) {
+  /* ================= USER NAME ================= */
+  const userName = localStorage.getItem("userName") || " ";
+
+  /* ================= DATE ================= */
+  const today = new Date();
+
+  const formattedDate = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(today);
+
   return (
     <>
       <div className="header">
@@ -10,7 +24,7 @@ function Header({ onMenuClick }) {
         </button>
 
         <div className="page-title">
-          <h1>Welcome Abhinav B</h1>
+          <h1>Welcome {userName}</h1>
         </div>
 
         <div className="header-actions">
@@ -18,8 +32,20 @@ function Header({ onMenuClick }) {
             🔔
             <span className="notification-badge">2</span>
           </button>
-          <div className="current-date">Monday, Dec 1, 2025</div>
-          <button className="logout-btn">Logout</button>
+
+          <div className="current-date">{formattedDate}</div>
+
+
+<button
+  className="logout-btn"
+  onClick={async () => {
+    await logoutUser();
+    window.location.href = "/";
+  }}
+>
+  Logout
+</button>
+
         </div>
       </div>
 
@@ -27,6 +53,5 @@ function Header({ onMenuClick }) {
     </>
   );
 }
-
 
 export default Header;

@@ -192,15 +192,7 @@ function DesignationsPage() {
 
                     <td>
                       <div className="table-actions">
-                        <button
-                          className="icon-btn view"
-                          title="View"
-                          onClick={() =>
-                            (window.location.href = `/admin/update-Designation?id=${row.id}&mode=view`)
-                          }
-                        >
-                          <i className="fa-solid fa-eye" />
-                        </button>
+                       
 
                         <button
                           className="icon-btn edit"

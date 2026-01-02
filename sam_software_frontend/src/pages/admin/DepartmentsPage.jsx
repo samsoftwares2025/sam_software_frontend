@@ -208,15 +208,7 @@
 
                       <td>
                         <div className="table-actions">
-                          <button
-                            className="icon-btn view"
-                            title="View Details"
-                            onClick={() =>
-                              (window.location.href = `/admin/update-department?id=${row.id}&mode=view`)
-                            }
-                          >
-                            <i className="fa-solid fa-eye" />
-                          </button>
+                        
 
                           <button
                             className="icon-btn edit"
