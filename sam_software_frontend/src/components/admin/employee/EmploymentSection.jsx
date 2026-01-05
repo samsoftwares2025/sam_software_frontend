@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "../../../assets/styles/admin.css";
 import Select from "react-select";
-import { getUserRoles } from "../../../api/admin/roles";
+import { getUserRoles, createRole } from "../../../api/admin/roles";
 
 import {
   getDepartments,
@@ -28,6 +28,8 @@ export default function EmploymentSection({
   selectedRoleId,
   setSelectedRoleId,
 }) {
+  const [status, setStatus] = useState(initialValues?.is_active ? "active" : "inactive");
+
   /* ================= EMPLOYMENT TYPE ================= */
   const [employmentTypes, setEmploymentTypes] = useState([]);
   const [isAddingEmploymentType, setIsAddingEmploymentType] = useState(false);
@@ -47,6 +49,11 @@ export default function EmploymentSection({
     }
   }, [initialValues, employees]);
 
+  useEffect(() => {
+    if (initialValues?.user_role_id && roles.length > 0) {
+      setSelectedRoleId(String(initialValues.user_role_id));
+    }
+  }, [initialValues, roles]);
 
   const fetchEmploymentTypes = async () => {
     const resp = await getEmployementTypes();
@@ -89,6 +96,37 @@ export default function EmploymentSection({
     setSelectedEmploymentType(String(res.id));
     setIsAddingEmploymentType(false);
     setNewEmploymentTypeName("");
+  };
+  const [isAddingRole, setIsAddingRole] = useState(false);
+  const [newRoleName, setNewRoleName] = useState("");
+  const handleRoleChange = (e) => {
+    const val = e.target.value;
+
+    if (val === "__add_role__") {
+      setIsAddingRole(true);
+      return;
+    }
+
+    setSelectedRoleId(val);
+  };
+  const handleConfirmAddRole = async () => {
+    if (!newRoleName.trim()) return;
+
+    try {
+      const res = await createRole(newRoleName.trim());
+
+      // refresh roles
+      const refreshed = await getUserRoles();
+      if (refreshed?.success) {
+        setRoles(refreshed.user_roles || []);
+      }
+
+      setSelectedRoleId(String(res.id));
+      setIsAddingRole(false);
+      setNewRoleName("");
+    } catch (err) {
+      console.error("Failed to create role", err);
+    }
   };
 
   /* ================= DEPARTMENT / DESIGNATION ================= */
@@ -184,6 +222,8 @@ export default function EmploymentSection({
       </h2>
 
       {/* 🔥 HIDDEN INPUTS (CRITICAL FOR FORM DATA) */}
+      <input type="hidden" name="is_active" value={status === "active" ? "1" : "0"}/>
+
       <input
         type="hidden"
         name="employment_type_id"
@@ -200,7 +240,6 @@ export default function EmploymentSection({
         value={selectedDesignation || ""}
       />
       <input type="hidden" name="parent_id" value={selectedParentId || ""} />
-      <input type="hidden" name="user_role_id" value={selectedRoleId || ""} />
 
       <div className="form-grid">
         {/* Employee ID */}
@@ -424,8 +463,6 @@ export default function EmploymentSection({
         <div className="form-group">
           <label className="form-label">Reporting Manager</label>
 
-        
-
           <Select
             options={employeeOptions}
             isClearable
@@ -442,19 +479,78 @@ export default function EmploymentSection({
         <div className="form-group">
           <label className="form-label required">Role</label>
 
+          <div style={{ display: "flex", gap: 8 }}>
+            <select
+              className="form-select"
+              value={selectedRoleId}
+              onChange={handleRoleChange}
+              required
+              style={{ flex: 1 }}
+            >
+              <option value="">Select Role</option>
+
+              {roles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.role}
+                </option>
+              ))}
+
+              <option value="__add_role__">+ Add Role</option>
+            </select>
+
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={async () => {
+                const res = await getUserRoles();
+                if (res?.success) {
+                  setRoles(res.user_roles || []);
+                }
+              }}
+            >
+              <i className="fa-solid fa-rotate-right" />
+            </button>
+          </div>
+
+          {isAddingRole && (
+            <div className="form-group">
+              <input
+                className="form-input"
+                placeholder="Enter new role"
+                value={newRoleName}
+                onChange={(e) => setNewRoleName(e.target.value)}
+              />
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleConfirmAddRole}
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setIsAddingRole(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="form-group">
+          <label className="form-label required">Status</label>
+
           <select
             className="form-select"
-            value={selectedRoleId}
-            onChange={(e) => setSelectedRoleId(e.target.value)}
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
             required
           >
-            <option value="">Select Role</option>
-
-            {roles.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.role}
-              </option>
-            ))}
+            <option value="">Select Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
           </select>
         </div>
       </div>

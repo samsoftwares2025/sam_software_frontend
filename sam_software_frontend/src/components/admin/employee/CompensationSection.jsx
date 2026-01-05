@@ -8,7 +8,7 @@ export default function CompensationSection({ initialValues = {} }) {
         <i className="fa-solid fa-money-bill-wave" />
         Compensation Details
       </h2>
-
+    
       <div className="form-grid-3">
         {/* Annual CTC */}
         <div className="form-group">
@@ -19,7 +19,7 @@ export default function CompensationSection({ initialValues = {} }) {
             name="annual_ctc"
             placeholder="$"
             required
-            defaultValue={initialValues.ctc || ""}
+            defaultValue={initialValues.annual_ctc || ""}
           />
         </div>
 

@@ -74,7 +74,7 @@ function App() {
         <Route path="/admin/add-role" element={<ProtectedRoute><AddRolePage /></ProtectedRoute>}/>
         <Route path="/admin/update-role/:roleId" element={<ProtectedRoute><UpdateRolePage /></ProtectedRoute>}/>
         <Route path="/admin/assign-role/:roleId" element={<ProtectedRoute><AssignRole /></ProtectedRoute>}/>
-        <Route path="/admin/employment-history/:id" element={<ProtectedRoute><PersonalEmploymentHistoryPage /></ProtectedRoute>}/>
+        <Route path="/admin/view-employment-history/:id" element={<ProtectedRoute><PersonalEmploymentHistoryPage /></ProtectedRoute>}/>
 
       </Routes>
     </BrowserRouter>

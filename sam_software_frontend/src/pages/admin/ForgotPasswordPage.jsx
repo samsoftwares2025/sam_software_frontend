@@ -1,13 +1,25 @@
 import React, { useState } from "react";
 import "../../assets/styles/CompanyRegistrationPage.css";
+import {
+  sendForgotPasswordOtp,
+  verifyForgotPasswordOtp,
+  resetPassword,
+} from "../../api/forgotPassword";
 
 const ForgotPasswordPage = () => {
-  const [step, setStep] = useState("email"); // "email" | "otp" | "success"
+  const [step, setStep] = useState("email"); // email | otp | reset | success
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSendOtp = (e) => {
+  /* ================= SEND OTP ================= */
+  const handleSendOtp = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -16,29 +28,74 @@ const ForgotPasswordPage = () => {
       return;
     }
 
-    // TODO: Call API to trigger OTP email
-    // Example: await api.sendOtp(email);
-
-    setStep("otp");
+    try {
+      setLoading(true);
+      await sendForgotPasswordOtp(email);
+      setStep("otp");
+    } catch (err) {
+      setError(
+        err?.response?.data?.message || "Failed to send OTP. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVerifyOtp = (e) => {
+  /* ================= VERIFY OTP ================= */
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setError("");
 
-    // TODO: Replace this with real OTP validation
-    // For now, just simulate success if something is typed
     if (!otp) {
       setError("Please enter the OTP sent to your email.");
       return;
     }
 
-    // If OTP is correct (simulate)
-    setStep("success");
+    try {
+      setLoading(true);
+      await verifyForgotPasswordOtp(email, otp);
+      setStep("reset");
+    } catch (err) {
+      setError(err?.response?.data?.message || "Invalid or expired OTP.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    // In a real app you might:
-    // - Redirect to reset password page, OR
-    // - Call API that sends reset link to email
+  /* ================= RESET PASSWORD ================= */
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccessMessage("");
+
+    if (!newPassword || !confirmPassword) {
+      setError("Please fill all fields.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await resetPassword(email, newPassword, confirmPassword);
+
+      setSuccessMessage(
+        "Password reset successful. You can now login with your new credentials."
+      );
+      setStep("success");
+
+      // Auto redirect to login after 2.5 seconds
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 2500);
+    } catch (err) {
+      setError(err?.response?.data?.message || "Failed to reset password.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -55,44 +112,29 @@ const ForgotPasswordPage = () => {
             No worries. Enter your registered work email, verify with OTP, and
             we&apos;ll help you securely reset your password.
           </p>
+
           <div className="features">
-            <div className="feature-item">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              <span>Secure verification using OTP</span>
-            </div>
-            <div className="feature-item">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              <span>No password sharing with anyone</span>
-            </div>
-            <div className="feature-item">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              <span>Works for admin &amp; employees</span>
-            </div>
+            {[
+              "Secure verification using OTP",
+              "No password sharing with anyone",
+              "Works for admin & employees",
+            ].map((text, index) => (
+              <div className="feature-item" key={index}>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                <span>{text}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* RIGHT PANEL – FORGOT PASSWORD FLOW */}
+        {/* RIGHT PANEL */}
         <div className="login-right">
           <div className="login-header">
             <h2>Forgot Password</h2>
@@ -100,71 +142,65 @@ const ForgotPasswordPage = () => {
           </div>
 
           {step !== "success" && (
-            <form onSubmit={step === "email" ? handleSendOtp : handleVerifyOtp}>
+            <form
+              onSubmit={
+                step === "email"
+                  ? handleSendOtp
+                  : step === "otp"
+                  ? handleVerifyOtp
+                  : handleResetPassword
+              }
+            >
               <div className="section-title">
-                {step === "email" ? "Verify Email" : "Enter OTP"}
+                {step === "email"
+                  ? "Verify Email"
+                  : step === "otp"
+                  ? "Enter OTP"
+                  : "Reset Password"}
               </div>
 
-              {/* EMAIL STEP */}
+              {/* EMAIL */}
               <div className="input-group">
-                <label htmlFor="email">Registered Work Email</label>
+                <label>Registered Work Email</label>
                 <div className="input-wrapper">
                   <input
                     type="email"
-                    id="email"
-                    name="email"
                     placeholder="name@company.com"
-                    required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    disabled={step === "otp"}
+                    disabled={step !== "email"}
+                    required
                   />
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                    />
-                  </svg>
                 </div>
+
                 {step === "otp" && (
                   <p className="hint-text">
-                    OTP has been sent to <strong>{email}</strong>. Please check
-                    your inbox (and spam folder).
+                    OTP has been sent to <strong>{email}</strong>.
                   </p>
                 )}
               </div>
 
-              {/* OTP STEP (shown after email submitted) */}
+              {/* OTP */}
               {step === "otp" && (
                 <div className="input-group">
-                  <label htmlFor="otp">OTP</label>
+                  <label>OTP</label>
                   <div className="input-wrapper">
                     <input
                       type="text"
-                      id="otp"
-                      name="otp"
-                      placeholder="Enter the 6-digit OTP"
+                      placeholder="Enter 6-digit OTP"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
                       required
                     />
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 11c1.657 0 3-1.343 3-3S13.657 5 12 5 9 6.343 9 8s1.343 3 3 3zM5 20h14a2 2 0 002-2v-1a5 5 0 00-5-5H8a5 5 0 00-5 5v1a2 2 0 002 2z"
-                      />
-                    </svg>
                   </div>
+
                   <p className="hint-text">
-                    Didn&apos;t receive the OTP?{" "}
+                    Didn&apos;t receive OTP?{" "}
                     <button
                       type="button"
                       className="link-button"
                       onClick={handleSendOtp}
+                      disabled={loading}
                     >
                       Resend OTP
                     </button>
@@ -172,10 +208,89 @@ const ForgotPasswordPage = () => {
                 </div>
               )}
 
+              {/* RESET PASSWORD */}
+              {step === "reset" && (
+                <>
+                  <div className="input-group">
+                    <label>New Password</label>
+                    <div
+                      className="input-wrapper"
+                      style={{ position: "relative" }}
+                    >
+                      <input
+                        type={showNewPassword ? "text" : "password"}
+                        placeholder="Enter new password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword((prev) => !prev)}
+                        style={{
+                          position: "absolute",
+                          right: "10px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          color: "var(--accent)",
+                        }}
+                      >
+                        {showNewPassword ? "Hide" : "Show"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="input-group">
+                    <label>Confirm Password</label>
+                    <div
+                      className="input-wrapper"
+                      style={{ position: "relative" }}
+                    >
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="Confirm new password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword((prev) => !prev)}
+                        style={{
+                          position: "absolute",
+                          right: "10px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          color: "var(--accent)",
+                        }}
+                      >
+                        {showConfirmPassword ? "Hide" : "Show"}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
               {error && <p className="error-text">{error}</p>}
 
-              <button type="submit" className="login-btn">
-                {step === "email" ? "Send OTP" : "Verify OTP"}
+              <button type="submit" className="login-btn" disabled={loading}>
+                {loading
+                  ? "Please wait..."
+                  : step === "email"
+                  ? "Send OTP"
+                  : step === "otp"
+                  ? "Verify OTP"
+                  : "Reset Password"}
               </button>
 
               <div className="signup-link">
@@ -184,27 +299,12 @@ const ForgotPasswordPage = () => {
             </form>
           )}
 
-          {/* SUCCESS MESSAGE */}
+          {/* SUCCESS */}
           {step === "success" && (
             <div>
-              <div className="section-title">Check your email</div>
-              <p className="info-text">
-                If the OTP was correct, a{" "}
-                <strong>reset password link has been sent</strong> to your
-                registered email address: <strong>{email}</strong>.
-              </p>
-              <p className="info-text">
-                Please open the email and follow the instructions to set a new
-                password for your HR Partner account.
-              </p>
-
-              <button
-                type="button"
-                className="login-btn"
-                onClick={() => (window.location.href = "/")}
-              >
-                Go to Login
-              </button>
+              <div className="section-title">Success</div>
+              <p className="success-text">{successMessage}</p>
+              <p className="info-text">Redirecting you to login page…</p>
             </div>
           )}
         </div>

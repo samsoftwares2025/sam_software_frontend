@@ -9,7 +9,7 @@ import { getUserRoles, deleteUserRole } from "../../api/admin/roles";
 const RolesPermissions = () => {
   /* ================= SIDEBAR ================= */
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [openSection, setOpenSection] = useState("roles");
+  const [openSection, setOpenSection] = useState("organization");
 
   /* ================= DATA ================= */
   const [roles, setRoles] = useState([]);

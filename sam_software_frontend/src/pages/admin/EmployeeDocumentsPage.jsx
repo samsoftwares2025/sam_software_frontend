@@ -344,8 +344,44 @@ function EmployeeDocumentsPage() {
                 </table>
               </div>
 
-              <div className="pagination-wrapper">
-                Showing {startRow} to {endRow} of {totalCount} records
+              <div className="table-footer">
+                <div id="tableInfo">
+                  Showing {startRow} to {endRow} of {totalCount} employees
+                </div>
+
+                <div className="pagination">
+                  {/* Previous */}
+                  <button
+                    disabled={page === 1}
+                    title="Previous page"
+                    onClick={() => handlePageChange(page - 1)}
+                  >
+                    <i className="fa-solid fa-angle-left"></i>
+                  </button>
+
+                  {/* Page numbers */}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (p) => (
+                      <button
+                        key={p}
+                        className={p === page ? "active-page" : ""}
+                        onClick={() => handlePageChange(p)}
+                        disabled={p === page}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+
+                  {/* Next */}
+                  <button
+                    disabled={page === totalPages}
+                    title="Next page"
+                    onClick={() => handlePageChange(page + 1)}
+                  >
+                    <i className="fa-solid fa-angle-right"></i>
+                  </button>
+                </div>
               </div>
             </>
           )}

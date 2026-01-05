@@ -43,7 +43,6 @@ export default function AddEmployeeForm({ onSubmit }) {
   const [designationsByDept, setDesignationsByDept] = useState({});
   const [selectedRoleId, setSelectedRoleId] = useState("");
 
-
   const [selectedEmploymentType, setSelectedEmploymentType] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedDesignation, setSelectedDesignation] = useState("");
@@ -62,6 +61,7 @@ export default function AddEmployeeForm({ onSubmit }) {
   };
 
   const [documents, setDocuments] = useState([emptyDocument]);
+  const [personalInfo, setPersonalInfo] = useState({});
 
   /* ================= PREVIOUS EXPERIENCE ================= */
   const emptyExperience = {
@@ -168,9 +168,7 @@ export default function AddEmployeeForm({ onSubmit }) {
 
   const handleExperienceChange = (index, field, value) => {
     setExperiences((prev) =>
-      prev.map((exp, i) =>
-        i === index ? { ...exp, [field]: value } : exp
-      )
+      prev.map((exp, i) => (i === index ? { ...exp, [field]: value } : exp))
     );
   };
 
@@ -233,12 +231,23 @@ export default function AddEmployeeForm({ onSubmit }) {
   return (
     <>
       <form className="form-container" ref={formRef} onSubmit={handleSubmit}>
-        <PersonalInfoSection
-          photoPreview={photoPreview}
-          onPhotoChange={(e) =>
-            setPhotoPreview(URL.createObjectURL(e.target.files[0]))
-          }
-        />
+   <PersonalInfoSection
+  personalInfo={personalInfo}
+  setPersonalInfo={setPersonalInfo}
+  photoPreview={photoPreview}
+  onPhotoChange={(e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setPhotoPreview(URL.createObjectURL(file));
+      setPersonalInfo((prev) => ({
+        ...prev,
+        image: file,
+      }));
+    }
+  }}
+  mode="add"
+/>
+
 
         <EmploymentSection
           selectedEmploymentType={selectedEmploymentType}
@@ -247,10 +256,15 @@ export default function AddEmployeeForm({ onSubmit }) {
           setSelectedDepartment={setSelectedDepartment}
           selectedDesignation={selectedDesignation}
           setSelectedDesignation={setSelectedDesignation}
-          selectedRoleId={selectedRoleId}            
-          setSelectedRoleId={setSelectedRoleId}    
+          selectedRoleId={selectedRoleId}
+          setSelectedRoleId={setSelectedRoleId}
         />
-
+        <PreviousExperienceSection
+          experiences={experiences}
+          onAdd={handleAddExperience}
+          onChange={handleExperienceChange}
+          onRemove={handleRemoveExperience}
+        />
         <DocumentsSection
           documents={documents}
           onAdd={handleAddDocument}
@@ -260,18 +274,15 @@ export default function AddEmployeeForm({ onSubmit }) {
           onRemoveDocument={handleRemoveDocument}
         />
 
-        <PreviousExperienceSection
-          experiences={experiences}
-          onAdd={handleAddExperience}
-          onChange={handleExperienceChange}
-          onRemove={handleRemoveExperience}
-        />
-
         <CompensationSection />
         <EmergencyContactSection />
 
         <div className="form-actions" style={{ justifyContent: "flex-end" }}>
-          <button type="button" className="btn btn-secondary" onClick={handleReset}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleReset}
+          >
             <i className="fa-solid fa-rotate-left" /> Reset
           </button>
 

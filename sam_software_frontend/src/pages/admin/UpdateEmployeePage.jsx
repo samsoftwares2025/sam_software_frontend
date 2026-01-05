@@ -57,6 +57,10 @@ function UpdateEmployeePage() {
           phone: emp.phone ?? "",
           qualification: emp.qualification ?? "",
           address: emp.address ?? "",
+          country: emp.country ?? "",
+          state: emp.state ?? "",
+          city: emp.city ?? "",
+          postal_code: emp.postal_code ?? "",
           image: emp.image ?? null, // 👈 profile photo
 
           /* ---------- Employment ---------- */
@@ -68,8 +72,10 @@ function UpdateEmployeePage() {
           department_id: String(emp.department_id ?? ""),
           designation_id: String(emp.designation_id ?? ""),
           parent_id: emp.parent_id ? String(emp.parent_id) : "",
+          user_role_id: emp.user_role_id ? String(emp.user_role_id) : "",
 
           work_location: emp.work_location ?? "",
+          is_active: emp.is_active, 
 
           /* ---------- Compensation ---------- */
           annual_ctc: emp.annual_ctc ?? "",

@@ -16,7 +16,7 @@ export default function PreviousExperienceSection({
 
       {(experiences || []).map((exp, index) => (
         <div
-          key={index}
+          key={exp._key}
           className="exp-block"
           style={{
             border: "1px solid #ddd",
@@ -40,7 +40,8 @@ export default function PreviousExperienceSection({
                 className="form-input"
                 value={exp.company_name}
                 onChange={(e) =>
-                  onChange(index, "company_name", e.target.value)
+                  onChange(exp._key, "company_name", e.target.value)
+
                 }
                 required
               />
@@ -116,7 +117,8 @@ export default function PreviousExperienceSection({
               type="button"
               className="btn btn-secondary"
                style={{ marginTop: 16 }} 
-              onClick={() => onRemove(index)}
+              onClick={() => onRemove(exp._key)}
+
             >
               Remove Experience
             </button>

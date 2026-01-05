@@ -5,61 +5,80 @@ import EmploymentSection from "./EmploymentSection";
 import DocumentsSection from "./DocumentsSection";
 import CompensationSection from "./CompensationSection";
 import EmergencyContactSection from "./EmergencyContactSection";
-import "../../../assets/styles/admin.css";
+import PreviousExperienceSection from "./PreviousExperienceSection";
 
-import { getEmployementTypes } from "../../../api/admin/employement_type";
-import { getDepartments } from "../../../api/admin/departments";
-import { getDesignations } from "../../../api/admin/designations";
+import "../../../assets/styles/admin.css";
 
 export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
   const formRef = useRef(null);
+  const [personalInfo, setPersonalInfo] = useState({});
+useEffect(() => {
+  const emp = initialValues?.employee ?? initialValues;
+
+  if (!emp) return;
+
+  setPersonalInfo({
+    name: emp.name ?? "",
+    date_of_birth: emp.date_of_birth ?? "",
+    gender: emp.gender ?? "",
+    personal_email: emp.personal_email ?? "",
+    phone: emp.phone ?? "",
+    qualification: emp.qualification ?? "",
+    address: emp.address ?? "",
+    country: emp.country ?? "",
+    state: emp.state ?? "",
+    city: emp.city ?? "",
+    postal_code: emp.postal_code ?? "",
+  });
+}, [initialValues]);
+
 
   /* ================= PHOTO ================= */
   const [photoPreview, setPhotoPreview] = useState(null);
 
   /* ================= EMPLOYMENT ================= */
-  const [employmentTypes, setEmploymentTypes] = useState([]);
-  const [departments, setDepartments] = useState([]);
-  const [designationsByDept, setDesignationsByDept] = useState({});
-
   const [selectedEmploymentType, setSelectedEmploymentType] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedDesignation, setSelectedDesignation] = useState("");
-  const toDateInput = (value) => {
-  if (!value) return "";
-  return value.split("T")[0]; // ✅ YYYY-MM-DD
-};
+  const [selectedRoleId, setSelectedRoleId] = useState("");
 
   /* ================= DOCUMENTS ================= */
   const [documents, setDocuments] = useState([]);
 
+  /* ================= EXPERIENCES ================= */
+  const [experiences, setExperiences] = useState([]);
+
+  const toDateInput = (value) => {
+    if (!value) return "";
+    return value.split("T")[0];
+  };
+
   /* ================= SYNC INITIAL VALUES ================= */
   useEffect(() => {
-    // ✅ PROFILE PHOTO
     if (initialValues?.image) {
       setPhotoPreview(initialValues.image);
     }
 
-    // ✅ EMPLOYMENT
     setSelectedEmploymentType(initialValues?.employment_type_id || "");
     setSelectedDepartment(initialValues?.department_id || "");
     setSelectedDesignation(initialValues?.designation_id || "");
+    setSelectedRoleId(initialValues?.user_role_id || "");
 
-    // ✅ DOCUMENTS (FIXED IMAGE MAPPING)
+    /* ---------- DOCUMENTS ---------- */
     if (Array.isArray(initialValues?.documents) && initialValues.documents.length) {
       setDocuments(
-        initialValues.documents.map(doc => ({
+        initialValues.documents.map((doc) => ({
           id: doc.document_id,
           type: doc.document_type || "",
           number: doc.document_number || "",
           country: doc.country || "",
-          issue_date: toDateInput(doc.issue_date),     // ✅ FIX
-          expiry_date: toDateInput(doc.expiry_date),   // ✅ FIX
+          issue_date: toDateInput(doc.issue_date),
+          expiry_date: toDateInput(doc.expiry_date),
           status: doc.status || "",
           notes: doc.note || "",
           files: [],
-          previews: (doc.images || []).map(img => ({
-            url: img.url,               // ✅ FIX
+          previews: (doc.images || []).map((img) => ({
+            url: img.url,
             image_id: img.image_id,
             existing: true,
           })),
@@ -68,60 +87,50 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     } else {
       setDocuments([{ number: "", files: [], previews: [] }]);
     }
+/* ---------- EXPERIENCES ---------- */
+if (Array.isArray(initialValues?.experiences) && initialValues.experiences.length) {
+  setExperiences(
+    initialValues.experiences.map((exp) => ({
+      _key: exp.experience_id ?? exp.id ?? crypto.randomUUID(), // 🔥 REQUIRED
+      experience_id: exp.experience_id ?? exp.id ?? null,
+      company_name: exp.company_name || "",
+      job_title: exp.job_title || "",
+      start_date: toDateInput(exp.start_date),
+      end_date: toDateInput(exp.end_date),
+      responsibilities: exp.responsibilities || "",
+    }))
+  );
+} else {
+  setExperiences([
+    {
+      _key: crypto.randomUUID(),   // 🔥 REQUIRED
+      experience_id: null,
+      company_name: "",
+      job_title: "",
+      start_date: "",
+      end_date: "",
+      responsibilities: "",
+    },
+  ]);
+}
+
+
   }, [initialValues]);
-
-  /* ================= FETCH DROPDOWNS ================= */
-  useEffect(() => {
-    const fetchAll = async () => {
-      try {
-        const etRes = await getEmployementTypes();
-        setEmploymentTypes(
-          Array.isArray(etRes?.employment_types)
-            ? etRes.employment_types
-            : etRes || []
-        );
-
-        const deptRes = await getDepartments();
-        const deptList = Array.isArray(deptRes)
-          ? deptRes
-          : deptRes?.departments || [];
-
-        setDepartments(deptList.map(d => ({ value: d.id, label: d.name })));
-
-        const desigRes = await getDesignations();
-        const desigList = Array.isArray(desigRes)
-          ? desigRes
-          : desigRes?.designations || [];
-
-        const grouped = {};
-        desigList.forEach(d => {
-          if (!grouped[d.department_id]) grouped[d.department_id] = [];
-          grouped[d.department_id].push(d);
-        });
-
-        setDesignationsByDept(grouped);
-      } catch (err) {
-        console.error("Failed to load dropdown data", err);
-      }
-    };
-
-    fetchAll();
-  }, []);
 
   /* ================= DOCUMENT HANDLERS ================= */
   const handleAddDocument = () => {
-    setDocuments(prev => [...prev, { number: "", files: [], previews: [] }]);
+    setDocuments((prev) => [...prev, { number: "", files: [], previews: [] }]);
   };
 
   const handleDocumentChange = (index, field, value) => {
-    setDocuments(prev =>
+    setDocuments((prev) =>
       prev.map((doc, i) => (i === index ? { ...doc, [field]: value } : doc))
     );
   };
 
   const handleDocumentFilesChange = (index, files) => {
     const arr = Array.from(files);
-    setDocuments(prev =>
+    setDocuments((prev) =>
       prev.map((doc, i) =>
         i === index
           ? {
@@ -129,7 +138,7 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
               files: [...doc.files, ...arr],
               previews: [
                 ...doc.previews,
-                ...arr.map(f => ({ url: URL.createObjectURL(f) })),
+                ...arr.map((f) => ({ url: URL.createObjectURL(f) })),
               ],
             }
           : doc
@@ -138,7 +147,7 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
   };
 
   const handleRemoveDocumentFile = (docIdx, fileIdx) => {
-    setDocuments(prev =>
+    setDocuments((prev) =>
       prev.map((doc, i) =>
         i === docIdx
           ? {
@@ -151,18 +160,50 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     );
   };
 
-  const handleRemoveDocument = index => {
-    setDocuments(prev => prev.filter((_, i) => i !== index));
+  const handleRemoveDocument = (index) => {
+    setDocuments((prev) => prev.filter((_, i) => i !== index));
   };
 
+  /* ================= EXPERIENCE HANDLERS ================= */
+  const handleAddExperience = () => {
+    setExperiences((prev) => [
+      ...prev,
+      {
+        _key: crypto.randomUUID(),   
+        experience_id: null,
+        company_name: "",
+        job_title: "",
+        start_date: "",
+        end_date: "",
+        responsibilities: "",
+      },
+    ]);
+  };
+
+const handleExperienceChange = (key, field, value) => {
+  setExperiences((prev) =>
+    prev.map((exp) =>
+      exp._key === key ? { ...exp, [field]: value } : exp
+    )
+  );
+};
+
+
+const handleRemoveExperience = (key) => {
+  setExperiences((prev) => prev.filter((e) => e._key !== key));
+};
+
+
   /* ================= SUBMIT ================= */
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const formData = new FormData(e.target);
 
-    formData.append("employee_id", initialValues.id);
+    // required explicit role
+    formData.append("user_role_id", selectedRoleId);
 
+    /* ---------- DOCUMENTS ---------- */
     const mappedDocs = documents.map((doc, idx) => ({
       document_id: doc.id,
       document_type: doc.type,
@@ -178,24 +219,37 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     formData.append("documents", JSON.stringify(mappedDocs));
 
     documents.forEach((doc, idx) => {
-      doc.files.forEach(file => {
+      doc.files.forEach((file) => {
         formData.append(`document_files_${idx}`, file);
       });
     });
+
+    /* ---------- EXPERIENCES ---------- */
+/* ---------- EXPERIENCES ---------- */
+const cleanedExperiences = experiences.map(({ _key, ...rest }) => rest);
+
+formData.append("experience", JSON.stringify(cleanedExperiences));
+
+
 
     await onSubmit(formData);
   };
 
   /* ================= RENDER ================= */
+        console.log("PERSONAL INFO STATE 👉", personalInfo);
+
   return (
     <form className="form-container" ref={formRef} onSubmit={handleSubmit}>
-      <PersonalInfoSection
-        initialValues={initialValues}
-        photoPreview={photoPreview}
-        onPhotoChange={e =>
-          setPhotoPreview(URL.createObjectURL(e.target.files[0]))
-        }
-      />
+
+   <PersonalInfoSection
+  personalInfo={personalInfo}
+  setPersonalInfo={setPersonalInfo}
+  photoPreview={photoPreview}
+  onPhotoChange={(e) =>
+    setPhotoPreview(URL.createObjectURL(e.target.files[0]))
+  }
+/>
+
 
       <EmploymentSection
         initialValues={initialValues}
@@ -205,7 +259,17 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
         setSelectedDepartment={setSelectedDepartment}
         selectedDesignation={selectedDesignation}
         setSelectedDesignation={setSelectedDesignation}
+        selectedRoleId={selectedRoleId}
+        setSelectedRoleId={setSelectedRoleId}
       />
+
+   <PreviousExperienceSection
+  experiences={experiences}
+  onAdd={handleAddExperience}
+  onChange={handleExperienceChange}
+  onRemove={handleRemoveExperience}
+/>
+
 
       <DocumentsSection
         documents={documents}
@@ -220,7 +284,7 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
       <EmergencyContactSection initialValues={initialValues} />
 
       <div className="form-actions" style={{ justifyContent: "flex-end" }}>
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="btn btn-primary" disabled={!selectedRoleId}>
           <i className="fa-solid fa-save" /> Update Employee
         </button>
       </div>

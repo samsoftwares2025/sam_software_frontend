@@ -10,19 +10,21 @@ const getUserId = () => {
  * getEmployeeMasterData
  * (Same auth pattern as departments)
  */
-export const getEmployeeMasterData = async () => {
-  console.log("🔥 getEmployeeMasterData CALLED");
-
+export const getEmployeeMasterData = async (payload = {}) => {
   const userId = localStorage.getItem("userId");
 
   const { data } = await http.post(
     "/hr/list-employee-master-data/",
-    { user_id: userId }
+    {
+      user_id: userId,
+      page: payload.page,
+      page_size: payload.page_size, // 👈 required
+    }
   );
 
-  console.log("🔥 Employee master API response:", data);
   return data;
 };
+
 
 // src/api/admin/employees.js
 export const filterEmployeeMasterData = async (payload) => {
@@ -186,7 +188,7 @@ export const getEmployeeByUserId = async (targetUserId) => {
 };
 
 
-// ❌ KEEP THIS ONLY IF SOME OLD PAGE NEEDS employee_id
+
 export const getEmployeeById = async (employeeId) => {
   const token = localStorage.getItem("accessToken");
   const userId = localStorage.getItem("userId");
@@ -283,37 +285,27 @@ export const deleteEmployee = async (employeeId) => {
 
 
 
-
-
 /* =========================
    GET PersonalEmploymentHistory  
 ========================= */
-export const PersonalEmploymentHistory = async ({ page = 1, page_size = 50 } = {}) => {
-  const userId =
-    localStorage.getItem("user_id") ||
-    localStorage.getItem("id") ||
-    localStorage.getItem("userId");
-
+export const PersonalEmploymentHistory = async ({
+  auth_user_id,   // logged-in user
+  employee_id,    // employee whose history we need
+  page = 1,
+  page_size = 50,
+}) => {
   const token =
-    localStorage.getItem("token") ||
+    localStorage.getItem("accessToken") ||
     localStorage.getItem("access_token");
 
-  if (!userId || !token) {
-    return Promise.reject(
-      new Error("Session expired. Please login again.")
-    );
-  }
-
-  const payload = {
-    user_id: userId,
-    page,
-    page_size,
-  };
-
-  const response = await http.post(
-      "/users/user-employee-history/", // ✅ FIXED PATH
-
-    payload,
+  const { data } = await http.post(
+    "/users/user-employee-history/",
+    {
+      user_id: auth_user_id, // ✅ required by backend
+      id: employee_id,       // ✅ required by backend
+      page,
+      page_size,
+    },
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -321,5 +313,5 @@ export const PersonalEmploymentHistory = async ({ page = 1, page_size = 50 } = {
     }
   );
 
-  return response.data;
+  return data;
 };

@@ -46,44 +46,35 @@ export default function DocumentsSection({
               marginBottom: 15,
             }}
           >
-            <h3 style={{ marginBottom: 10 }}>
-              Document {index + 1}
-            </h3>
+            <h3 style={{ marginBottom: 10 }}>Document {index + 1}</h3>
 
             <div className="form-grid">
               {/* Document Type */}
               <div className="form-group">
-                <label className="form-label required">
-                  Document Type
-                </label>
-               <select
-  className="form-select"
-  value={doc.type}
-  onChange={(e) => onChange(index, "type", e.target.value)}
-  required
->
-  <option value="">Select Document Type</option>
-  <option value="visa">Visa</option>
-  <option value="license">License</option>
-  <option value="passport">Passport</option>
-  <option value="id">National ID</option>
-  <option value="other">Other</option>
-</select>
-
+                <label className="form-label required">Document Type</label>
+                <select
+                  className="form-select"
+                  value={doc.type}
+                  onChange={(e) => onChange(index, "type", e.target.value)}
+                  required
+                >
+                  <option value="">Select Document Type</option>
+                  <option value="visa">Visa</option>
+                  <option value="license">License</option>
+                  <option value="passport">Passport</option>
+                  <option value="id">National ID</option>
+                  <option value="other">Other</option>
+                </select>
               </div>
 
               {/* Document Number */}
               <div className="form-group">
-                <label className="form-label required">
-                  Document Number
-                </label>
+                <label className="form-label required">Document Number</label>
                 <input
                   type="text"
                   className="form-input"
                   value={doc.number}
-                  onChange={(e) =>
-                    onChange(index, "number", e.target.value)
-                  }
+                  onChange={(e) => onChange(index, "number", e.target.value)}
                   required
                 />
               </div>
@@ -94,9 +85,7 @@ export default function DocumentsSection({
                 <select
                   className="form-select"
                   value={doc.country}
-                  onChange={(e) =>
-                    onChange(index, "country", e.target.value)
-                  }
+                  onChange={(e) => onChange(index, "country", e.target.value)}
                 >
                   <option value="">Select Country</option>
                   <option value="india">India</option>
@@ -138,9 +127,7 @@ export default function DocumentsSection({
                 <select
                   className="form-select"
                   value={doc.status}
-                  onChange={(e) =>
-                    onChange(index, "status", e.target.value)
-                  }
+                  onChange={(e) => onChange(index, "status", e.target.value)}
                 >
                   <option value="valid">Valid</option>
                   <option value="expired">Expired</option>
@@ -151,17 +138,13 @@ export default function DocumentsSection({
 
             {/* Upload */}
             <div className="form-group full-width" style={{ marginTop: 12 }}>
-              <label className="form-label">
-                Upload Scans / Images / PDF
-              </label>
+              <label className="form-label">Upload Scans / Images / PDF</label>
 
               <input
                 type="file"
                 accept="image/*,application/pdf"
                 multiple
-                onChange={(e) =>
-                  handleFilesSelect(index, e.target.files)
-                }
+                onChange={(e) => handleFilesSelect(index, e.target.files)}
                 className="form-input"
               />
 
@@ -214,9 +197,7 @@ export default function DocumentsSection({
 
                       <button
                         type="button"
-                        onClick={() =>
-                          onRemoveFile(index, fi)
-                        }
+                        onClick={() => onRemoveFile(index, fi)}
                         style={{
                           position: "absolute",
                           top: 4,
@@ -249,11 +230,7 @@ export default function DocumentsSection({
         );
       })}
 
-      <button
-        type="button"
-        className="btn btn-primary"
-        onClick={onAdd}
-      >
+      <button type="button" className="btn btn-primary" onClick={onAdd}>
         <i className="fa-solid fa-plus"></i> Add Document
       </button>
     </div>

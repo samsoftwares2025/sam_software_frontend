@@ -44,42 +44,37 @@ function EmploymentHistoryPage() {
   const [filterStatus, setFilterStatus] = useState("");
 
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(8);
+  const [pageSize] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
   const navigate = useNavigate();
-useEffect(() => {
-  if (!hasMounted) {
-    setHasMounted(true);
-    return;
-  }
+  useEffect(() => {
+    if (!hasMounted) {
+      setHasMounted(true);
+      return;
+    }
 
-  setPage(1);
-  setLoading(true);
+    setPage(1);
+    setLoading(true);
 
-  filterEmployeeHistoryData({
-    search: searchTerm,
-    status: filterStatus,
-    page: 1,
-    page_size: pageSize,
-  })
-    .then((resp) => {
-      let rows = resp?.users_data || [];
-
-      rows = applyClientSideFilters(
-        rows,
-        filterDepartment,
-        filterType
-      );
-
-      setHistory(rows);
-      setTotalCount(rows.length);
-      setTotalPages(Math.ceil(rows.length / pageSize) || 1);
+    filterEmployeeHistoryData({
+      search: searchTerm,
+      status: filterStatus,
+      page: 1,
+      page_size: pageSize,
     })
-    .finally(() => setLoading(false));
+      .then((resp) => {
+        let rows = resp?.users_data || [];
 
-}, [searchTerm, filterDepartment, filterType, filterStatus]);
+        rows = applyClientSideFilters(rows, filterDepartment, filterType);
+
+        setHistory(rows);
+        setTotalCount(rows.length);
+        setTotalPages(Math.ceil(rows.length / pageSize) || 1);
+      })
+      .finally(() => setLoading(false));
+  }, [searchTerm, filterDepartment, filterType, filterStatus]);
   /* ===============================
      LOAD MASTER DATA
   ================================ */
@@ -116,9 +111,7 @@ useEffect(() => {
         setTotalPages(resp?.total_pages || 1);
 
         // ✅ status can be derived safely
-        setStatuses([
-          ...new Set(rows.map((r) => r.status).filter(Boolean)),
-        ]);
+        setStatuses([...new Set(rows.map((r) => r.status).filter(Boolean))]);
       })
       .catch(() => {
         setError("Unable to load employment history.");
@@ -126,32 +119,27 @@ useEffect(() => {
       .finally(() => setLoading(false));
   };
 
-useEffect(() => {
-  loadHistoryList(1);
-}, []);
-
+  useEffect(() => {
+    loadHistoryList(1);
+  }, []);
 
   /* ===============================
      FILTERING
   ================================ */
-useEffect(() => {
-  setPage(1);
-  setLoading(true);
+  useEffect(() => {
+    setPage(1);
+    setLoading(true);
 
-  filterEmployeeHistoryData({
-    search: searchTerm,
-    status: filterStatus,
-    page: 1,
-    page_size: pageSize,
-  })
+    filterEmployeeHistoryData({
+      search: searchTerm,
+      status: filterStatus,
+      page: 1,
+      page_size: pageSize,
+    })
       .then((resp) => {
         let rows = resp?.users_data || [];
 
-        rows = applyClientSideFilters(
-          rows,
-          filterDepartment,
-          filterType
-        );
+        rows = applyClientSideFilters(rows, filterDepartment, filterType);
 
         setHistory(rows);
         setTotalCount(rows.length);
@@ -181,11 +169,7 @@ useEffect(() => {
       .then((resp) => {
         let rows = resp?.users_data || [];
 
-        rows = applyClientSideFilters(
-          rows,
-          filterDepartment,
-          filterType
-        );
+        rows = applyClientSideFilters(rows, filterDepartment, filterType);
 
         setHistory(rows);
         setTotalCount(rows.length);
@@ -211,9 +195,9 @@ useEffect(() => {
   };
 
   const getStatusStyle = (status) => {
-    if (status === "Active") return { color: "var(--success)", fontWeight: 600 };
-    if (status === "On Notice")
-      return { color: "#c27c0e", fontWeight: 600 };
+    if (status === "Active")
+      return { color: "var(--success)", fontWeight: 600 };
+    if (status === "On Notice") return { color: "#c27c0e", fontWeight: 600 };
     if (status === "Terminated")
       return { color: "var(--danger)", fontWeight: 600 };
     return { color: "#6b7280", fontWeight: 600 };
@@ -349,26 +333,47 @@ useEffect(() => {
                           <td>{row.employee_id}</td>
                           <td>{row.name}</td>
                           <td>{row.employment_type}</td>
-                          <td> {row.joining_date ? new Date(row.joining_date).toLocaleDateString("en-GB") : "-"}</td>
-                          <td> {row.confirmation_date ? new Date(row.confirmation_date).toLocaleDateString("en-GB") : "-"}</td>
-                          <td> {row.last_working_date ? new Date(row.last_working_date).toLocaleDateString("en-GB") : "-"}</td>
+                          <td>
+                            {" "}
+                            {row.joining_date
+                              ? new Date(row.joining_date).toLocaleDateString(
+                                  "en-GB"
+                                )
+                              : "-"}
+                          </td>
+                          <td>
+                            {" "}
+                            {row.confirmation_date
+                              ? new Date(
+                                  row.confirmation_date
+                                ).toLocaleDateString("en-GB")
+                              : "-"}
+                          </td>
+                          <td>
+                            {" "}
+                            {row.last_working_date
+                              ? new Date(
+                                  row.last_working_date
+                                ).toLocaleDateString("en-GB")
+                              : "-"}
+                          </td>
                           <td>{row.reporting_manager || "-"}</td>
- <td>
-                          {" "}
-                          <div class="table-actions">
-                            <button
-                              className="icon-btn view"
-                              title="View Details"
-                              onClick={() =>
-                                navigate(`/admin/employment-history/${row.id}`)
-                              }
-                            >
-                              <i className="fa-solid fa-eye"></i>
-                            </button>
-
-                           
-                          </div>
-                        </td>                         
+                          <td>
+                            {" "}
+                            <div class="table-actions">
+                              <button
+                                className="icon-btn view"
+                                title="View Details"
+                                onClick={() =>
+                                  navigate(
+                                    `/admin/view-employment-history/${row.id}`
+                                  )
+                                }
+                              >
+                                <i className="fa-solid fa-eye"></i>
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       );
                     })}
@@ -385,9 +390,43 @@ useEffect(() => {
               </div>
 
               {/* PAGINATION */}
-              <div className="pagination-wrapper">
-                <div>
+              <div className="table-footer">
+                <div id="tableInfo">
                   Showing {startRow} to {endRow} of {totalCount} employees
+                </div>
+
+                <div className="pagination">
+                  {/* Previous */}
+                  <button
+                    disabled={page === 1}
+                    title="Previous page"
+                    onClick={() => handlePageChange(page - 1)}
+                  >
+                    <i className="fa-solid fa-angle-left"></i>
+                  </button>
+
+                  {/* Page numbers */}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (p) => (
+                      <button
+                        key={p}
+                        className={p === page ? "active-page" : ""}
+                        onClick={() => handlePageChange(p)}
+                        disabled={p === page}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+
+                  {/* Next */}
+                  <button
+                    disabled={page === totalPages}
+                    title="Next page"
+                    onClick={() => handlePageChange(page + 1)}
+                  >
+                    <i className="fa-solid fa-angle-right"></i>
+                  </button>
                 </div>
               </div>
             </>

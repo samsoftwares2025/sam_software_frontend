@@ -2,21 +2,31 @@ import React from "react";
 import "../../../assets/styles/admin.css";
 
 export default function PersonalInfoSection({
-  initialValues = {},
+  personalInfo = {},
+  setPersonalInfo,
   photoPreview,
   onPhotoChange,
+  mode = "add", // "add" | "edit"
 }) {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setPersonalInfo((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   return (
     <div className="form-section">
       <h2 className="section-title">
-        <i className="fa-solid fa-user" />
-        Personal Information
+        <i className="fa-solid fa-user" />{" "}
+        {mode === "edit" ? "Update Personal Information" : "Add Personal Information"}
       </h2>
 
       {/* PHOTO */}
       <div className="form-group full-width">
         <div className="photo-upload">
-          <div className="photo-preview" id="photoPreview">
+          <div className="photo-preview">
             {photoPreview ? (
               <img src={photoPreview} alt="Employee" />
             ) : (
@@ -49,8 +59,9 @@ export default function PersonalInfoSection({
             type="text"
             className="form-input"
             name="name"
+            value={personalInfo.name || ""}
+            onChange={handleChange}
             required
-            defaultValue={initialValues.name || ""}
           />
         </div>
 
@@ -60,8 +71,13 @@ export default function PersonalInfoSection({
             type="date"
             className="form-input"
             name="date_of_birth"
+            value={
+              personalInfo.date_of_birth
+                ? personalInfo.date_of_birth.slice(0, 10)
+                : ""
+            }
+            onChange={handleChange}
             required
-            defaultValue={initialValues.date_of_birth || ""}
           />
         </div>
 
@@ -70,8 +86,9 @@ export default function PersonalInfoSection({
           <select
             className="form-select"
             name="gender"
+            value={personalInfo.gender || ""}
+            onChange={handleChange}
             required
-            defaultValue={initialValues.gender || ""}
           >
             <option value="">Select Gender</option>
             <option value="male">Male</option>
@@ -86,8 +103,9 @@ export default function PersonalInfoSection({
             type="email"
             className="form-input"
             name="personal_email"
+            value={personalInfo.personal_email || ""}
+            onChange={handleChange}
             required
-            defaultValue={initialValues.personal_email || ""}
           />
         </div>
 
@@ -97,8 +115,9 @@ export default function PersonalInfoSection({
             type="tel"
             className="form-input"
             name="phone"
+            value={personalInfo.phone || ""}
+            onChange={handleChange}
             required
-            defaultValue={initialValues.phone || ""}
           />
         </div>
 
@@ -108,8 +127,9 @@ export default function PersonalInfoSection({
             type="text"
             className="form-input"
             name="qualification"
+            value={personalInfo.qualification || ""}
+            onChange={handleChange}
             required
-            defaultValue={initialValues.qualification || ""}
           />
         </div>
       </div>
@@ -120,8 +140,9 @@ export default function PersonalInfoSection({
         <textarea
           className="form-textarea"
           name="address"
+          value={personalInfo.address || ""}
+          onChange={handleChange}
           required
-          defaultValue={initialValues.address || ""}
         />
       </div>
 
@@ -133,8 +154,9 @@ export default function PersonalInfoSection({
             type="text"
             className="form-input"
             name="country"
+            value={personalInfo.country || ""}
+            onChange={handleChange}
             required
-            defaultValue={initialValues.country || ""}
           />
         </div>
 
@@ -144,8 +166,9 @@ export default function PersonalInfoSection({
             type="text"
             className="form-input"
             name="state"
+            value={personalInfo.state || ""}
+            onChange={handleChange}
             required
-            defaultValue={initialValues.state || ""}
           />
         </div>
 
@@ -155,8 +178,9 @@ export default function PersonalInfoSection({
             type="text"
             className="form-input"
             name="city"
+            value={personalInfo.city || ""}
+            onChange={handleChange}
             required
-            defaultValue={initialValues.city || ""}
           />
         </div>
 
@@ -166,8 +190,9 @@ export default function PersonalInfoSection({
             type="text"
             className="form-input"
             name="postal_code"
+            value={personalInfo.postal_code || ""}
+            onChange={handleChange}
             required
-            defaultValue={initialValues.postal_code || ""}
           />
         </div>
       </div>
