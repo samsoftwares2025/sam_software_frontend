@@ -7,6 +7,22 @@ import "../../assets/styles/admin.css";
 import { createDepartment } from "../../api/admin/departments";
 import { useAuth } from "../../context/AuthContext";
 
+/* ================= SUCCESS MODAL ================= */
+const SuccessModal = ({ onOk }) => (
+  <div className="modal-overlay">
+    <div className="modal-card">
+      <div className="success-icon">
+        <i className="fa-solid fa-circle-check"></i>
+      </div>
+      <h2>Department Added Successfully</h2>
+      <p>The department has been added to the system.</p>
+      <button className="btn btn-primary" onClick={onOk}>
+        OK
+      </button>
+    </div>
+  </div>
+);
+
 function AddDepartmentPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [openSection] = useState("organization");
@@ -14,6 +30,8 @@ function AddDepartmentPage() {
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -31,12 +49,10 @@ function AddDepartmentPage() {
     setSaving(true);
 
     try {
-      console.log("SENDING CREATE DEPARTMENT REQUEST:", { name: trimmed });
-
       await createDepartment(trimmed);
 
-      // ✅ success → go back to list
-      navigate("/admin/departments", { replace: true });
+      // ✅ SHOW SUCCESS MODAL (NO NAVIGATION YET)
+      setShowSuccessModal(true);
     } catch (err) {
       console.error("CREATE DEPARTMENT FAILED:", err);
 
@@ -48,18 +64,14 @@ function AddDepartmentPage() {
         setError(
           respData?.detail || "Session expired. Please sign in again."
         );
-
-        // optional but recommended
         logout();
         navigate("/", { replace: true });
         return;
       }
 
-      let message =
+      const message =
+        respData?.message ||
         respData?.detail ||
-        respData?.error ||
-        (Array.isArray(respData?.non_field_errors) &&
-          respData.non_field_errors[0]) ||
         "Failed to add department. Please try again.";
 
       setError(message);
@@ -69,74 +81,85 @@ function AddDepartmentPage() {
   };
 
   return (
-    <div className="container">
-      <Sidebar
-        isMobileOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        openSection={openSection}
-        setOpenSection={() => {}}
-      />
+    <>
+      <div className="container">
+        <Sidebar
+          isMobileOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          openSection={openSection}
+          setOpenSection={() => {}}
+        />
 
-      <main className="main">
-        <Header onMenuClick={() => setIsSidebarOpen((p) => !p)} />
-        <div className="the_line" />
+        <main className="main">
+          <Header onMenuClick={() => setIsSidebarOpen((p) => !p)} />
+          <div className="the_line" />
 
-        <div className="page-title">
-          <h3>Add Department</h3>
-          <p className="subtitle">Create a new department.</p>
-        </div>
+          <div className="page-title">
+            <h3>Add Department</h3>
+            <p className="subtitle">Create a new department.</p>
+          </div>
 
-        <div className="card">
-          <form onSubmit={handleSubmit} style={{ padding: "1.25rem" }}>
-            {error && (
-              <div style={{ color: "red", marginBottom: "10px" }}>
-                {error}
+          <div className="card">
+            <form onSubmit={handleSubmit} style={{ padding: "1.25rem" }}>
+              {error && (
+                <div style={{ color: "red", marginBottom: "10px" }}>
+                  {error}
+                </div>
+              )}
+
+              <div className="designation-page-form-row">
+                <label>Department Name</label>
+                <input
+                  className="designation-page-form-input"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Marketing"
+                  disabled={saving}
+                />
               </div>
-            )}
 
-            <div className="designation-page-form-row">
-              <label>Department Name</label>
-              <input
-                className="designation-page-form-input"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Marketing"
-              />
-            </div>
-
-            <div
-              style={{
-                marginTop: "1rem",
-                display: "flex",
-                gap: "0.75rem",
-              }}
-            >
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={saving}
+              <div
+                style={{
+                  marginTop: "1rem",
+                  display: "flex",
+                  gap: "0.75rem",
+                }}
               >
-                {saving ? "Saving..." : "Add Department"}
-              </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={saving}
+                >
+                  {saving ? "Saving..." : "Add Department"}
+                </button>
 
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => navigate("/admin/departments")}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      </main>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => navigate("/admin/departments")}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </main>
 
-      <div
-        className={`sidebar-overlay ${isSidebarOpen ? "show" : ""}`}
-        onClick={() => setIsSidebarOpen(false)}
-      />
-    </div>
+        <div
+          className={`sidebar-overlay ${isSidebarOpen ? "show" : ""}`}
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      </div>
+
+      {/* ✅ SUCCESS MODAL */}
+      {showSuccessModal && (
+        <SuccessModal
+          onOk={() => navigate("/admin/departments")}
+        />
+      )}
+    </>
   );
 }
 

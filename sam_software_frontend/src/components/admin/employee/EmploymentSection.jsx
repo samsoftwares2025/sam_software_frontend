@@ -28,7 +28,8 @@ export default function EmploymentSection({
   selectedRoleId,
   setSelectedRoleId,
 }) {
-  const [status, setStatus] = useState(initialValues?.is_active ? "active" : "inactive");
+  const [status, setStatus] = useState("active");
+
 
   /* ================= EMPLOYMENT TYPE ================= */
   const [employmentTypes, setEmploymentTypes] = useState([]);

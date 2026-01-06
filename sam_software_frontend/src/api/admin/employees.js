@@ -36,9 +36,9 @@ export const filterEmployeeMasterData = async (payload) => {
       user_id: userId,
       search: payload?.search || "",
       department_name: payload?.department || "",
-      is_active: payload?.is_active || "",
+      is_active: payload?.is_active || "",   // 🔥 CHANGE HERE
       page: payload?.page || 1,
-      page_size: payload?.page_size || 50,
+      page_size: payload?.page_size || 20,
     }
   );
 
@@ -55,7 +55,7 @@ export const getEmployeeHistoryData = async () => {
   const userId = localStorage.getItem("userId");
 
   const { data } = await http.post(
-    "/hr/list-employee-history/",
+    "/hr/list-employee-master-data/",
     { user_id: userId }
   );
 
@@ -69,13 +69,13 @@ export const filterEmployeeHistoryData = async (payload) => {
   const userId = localStorage.getItem("userId");
 
   const { data } = await http.post(
-    "/hr/filter-employee-history/",
+    "/hr/filter-employee-master-data/",
     {
       user_id: userId,
       search: payload?.search || "",
       status: payload?.status || "",
       page: payload?.page || 1,
-      page_size: payload?.page_size || 50,
+      page_size: payload?.page_size || 20,
     }
   );
 
@@ -292,7 +292,7 @@ export const PersonalEmploymentHistory = async ({
   auth_user_id,   // logged-in user
   employee_id,    // employee whose history we need
   page = 1,
-  page_size = 50,
+  page_size = 20,
 }) => {
   const token =
     localStorage.getItem("accessToken") ||

@@ -29,6 +29,8 @@ const SuccessModal = ({ onClose }) => (
 );
 
 export default function AddEmployeeForm({ onSubmit }) {
+  const [errors, setErrors] = useState({});
+
   const formRef = useRef(null);
 
   /* ================= MODAL ================= */
@@ -65,6 +67,8 @@ export default function AddEmployeeForm({ onSubmit }) {
 
   /* ================= PREVIOUS EXPERIENCE ================= */
   const emptyExperience = {
+    _key: crypto.randomUUID(), 
+    experience_id: null,
     company_name: "",
     job_title: "",
     start_date: "",
@@ -166,20 +170,24 @@ export default function AddEmployeeForm({ onSubmit }) {
     setExperiences((prev) => [...prev, { ...emptyExperience }]);
   };
 
-  const handleExperienceChange = (index, field, value) => {
-    setExperiences((prev) =>
-      prev.map((exp, i) => (i === index ? { ...exp, [field]: value } : exp))
-    );
-  };
+const handleExperienceChange = (key, field, value) => {
+  setExperiences(prev =>
+    prev.map(exp =>
+      exp._key === key ? { ...exp, [field]: value } : exp
+    )
+  );
+};
 
-  const handleRemoveExperience = (index) => {
-    setExperiences((prev) => prev.filter((_, i) => i !== index));
-  };
+const handleRemoveExperience = (key) => {
+  setExperiences(prev => prev.filter(exp => exp._key !== key));
+};
+
 
   /* ================= RESET ================= */
   const handleReset = () => {
     formRef.current?.reset();
-    setPhotoPreview(null);
+    setPersonalInfo({});
+    setPhotoPreview(null);   
     setSelectedEmploymentType("");
     setSelectedDepartment("");
     setSelectedDesignation("");
