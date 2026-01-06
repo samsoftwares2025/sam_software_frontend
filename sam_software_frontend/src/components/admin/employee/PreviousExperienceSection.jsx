@@ -5,7 +5,7 @@ export default function PreviousExperienceSection({
   experiences = [],
   onAdd,
   onChange,
-  onRemove,
+  onRemove, // (key, id) => void
 }) {
   // ✅ Helper: check if ANY field is filled
   const isAnyFieldFilled = (exp) => {
@@ -130,7 +130,7 @@ export default function PreviousExperienceSection({
                 type="button"
                 className="btn btn-secondary"
                 style={{ marginTop: 16 }}
-                onClick={() => onRemove(exp._key)}
+                onClick={() => onRemove(exp._key, exp.id)}
               >
                 Remove Experience
               </button>

@@ -34,6 +34,7 @@ import AddRolePage from "./pages/admin/AddRolePage";
 import UpdateRolePage from "./pages/admin/UpdateRolePage";
 import AssignRole from "./pages/admin/AssignRole";
 import PersonalEmploymentHistoryPage from "./pages/admin/PersonalEmploymentHistoryPage";
+import ComplianceDocumentationPage from "./pages/admin/ComplianceDocumentationPage";
 import "./App.css";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -75,6 +76,7 @@ function App() {
         <Route path="/admin/update-role/:roleId" element={<ProtectedRoute><UpdateRolePage /></ProtectedRoute>}/>
         <Route path="/admin/assign-role/:roleId" element={<ProtectedRoute><AssignRole /></ProtectedRoute>}/>
         <Route path="/admin/view-employment-history/:id" element={<ProtectedRoute><PersonalEmploymentHistoryPage /></ProtectedRoute>}/>
+        <Route path="/admin/compliance-documentation" element={<ProtectedRoute><ComplianceDocumentationPage /></ProtectedRoute>}/>
 
       </Routes>
     </BrowserRouter>

@@ -11,30 +11,13 @@ import "../../../assets/styles/admin.css";
 
 export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
   const formRef = useRef(null);
+
   const [personalInfo, setPersonalInfo] = useState({});
-useEffect(() => {
-  const emp = initialValues?.employee ?? initialValues;
-
-  if (!emp) return;
-
-  setPersonalInfo({
-    name: emp.name ?? "",
-    date_of_birth: emp.date_of_birth ?? "",
-    gender: emp.gender ?? "",
-    personal_email: emp.personal_email ?? "",
-    phone: emp.phone ?? "",
-    qualification: emp.qualification ?? "",
-    address: emp.address ?? "",
-    country: emp.country ?? "",
-    state: emp.state ?? "",
-    city: emp.city ?? "",
-    postal_code: emp.postal_code ?? "",
-  });
-}, [initialValues]);
-
-
-  /* ================= PHOTO ================= */
   const [photoPreview, setPhotoPreview] = useState(null);
+
+  /* ================= TRACK DELETED ================= */
+  const [deletedExperienceIds, setDeletedExperienceIds] = useState([]);
+  const [deletedDocumentIds, setDeletedDocumentIds] = useState([]);
 
   /* ================= EMPLOYMENT ================= */
   const [selectedEmploymentType, setSelectedEmploymentType] = useState("");
@@ -53,11 +36,29 @@ useEffect(() => {
     return value.split("T")[0];
   };
 
+  /* ================= PERSONAL INFO ================= */
+  useEffect(() => {
+    const emp = initialValues?.employee ?? initialValues;
+    if (!emp) return;
+
+    setPersonalInfo({
+      name: emp.name ?? "",
+      date_of_birth: emp.date_of_birth ?? "",
+      gender: emp.gender ?? "",
+      personal_email: emp.personal_email ?? "",
+      phone: emp.phone ?? "",
+      qualification: emp.qualification ?? "",
+      address: emp.address ?? "",
+      country: emp.country ?? "",
+      state: emp.state ?? "",
+      city: emp.city ?? "",
+      postal_code: emp.postal_code ?? "",
+    });
+  }, [initialValues]);
+
   /* ================= SYNC INITIAL VALUES ================= */
   useEffect(() => {
-    if (initialValues?.image) {
-      setPhotoPreview(initialValues.image);
-    }
+    if (initialValues?.image) setPhotoPreview(initialValues.image);
 
     setSelectedEmploymentType(initialValues?.employment_type_id || "");
     setSelectedDepartment(initialValues?.department_id || "");
@@ -87,34 +88,33 @@ useEffect(() => {
     } else {
       setDocuments([{ number: "", files: [], previews: [] }]);
     }
-/* ---------- EXPERIENCES ---------- */
-if (Array.isArray(initialValues?.experiences) && initialValues.experiences.length) {
-  setExperiences(
-    initialValues.experiences.map((exp) => ({
-      _key: exp.experience_id ?? exp.id ?? crypto.randomUUID(), // 🔥 REQUIRED
-      experience_id: exp.experience_id ?? exp.id ?? null,
-      company_name: exp.company_name || "",
-      job_title: exp.job_title || "",
-      start_date: toDateInput(exp.start_date),
-      end_date: toDateInput(exp.end_date),
-      responsibilities: exp.responsibilities || "",
-    }))
-  );
-} else {
-  setExperiences([
-    {
-      _key: crypto.randomUUID(),   // 🔥 REQUIRED
-      experience_id: null,
-      company_name: "",
-      job_title: "",
-      start_date: "",
-      end_date: "",
-      responsibilities: "",
-    },
-  ]);
-}
 
-
+    /* ---------- EXPERIENCES ---------- */
+    if (Array.isArray(initialValues?.experiences) && initialValues.experiences.length) {
+      setExperiences(
+        initialValues.experiences.map((exp) => ({
+          _key: exp.experience_id ?? exp.id ?? crypto.randomUUID(),
+          experience_id: exp.experience_id ?? exp.id ?? null,
+          company_name: exp.company_name || "",
+          job_title: exp.job_title || "",
+          start_date: toDateInput(exp.start_date),
+          end_date: toDateInput(exp.end_date),
+          responsibilities: exp.responsibilities || "",
+        }))
+      );
+    } else {
+      setExperiences([
+        {
+          _key: crypto.randomUUID(),
+          experience_id: null,
+          company_name: "",
+          job_title: "",
+          start_date: "",
+          end_date: "",
+          responsibilities: "",
+        },
+      ]);
+    }
   }, [initialValues]);
 
   /* ================= DOCUMENT HANDLERS ================= */
@@ -161,7 +161,19 @@ if (Array.isArray(initialValues?.experiences) && initialValues.experiences.lengt
   };
 
   const handleRemoveDocument = (index) => {
-    setDocuments((prev) => prev.filter((_, i) => i !== index));
+    setDocuments((prev) => {
+      const docToRemove = prev[index];
+
+      if (docToRemove?.id) {
+        setDeletedDocumentIds((ids) =>
+          ids.includes(docToRemove.id)
+            ? ids
+            : [...ids, docToRemove.id]
+        );
+      }
+
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   /* ================= EXPERIENCE HANDLERS ================= */
@@ -169,7 +181,7 @@ if (Array.isArray(initialValues?.experiences) && initialValues.experiences.lengt
     setExperiences((prev) => [
       ...prev,
       {
-        _key: crypto.randomUUID(),   
+        _key: crypto.randomUUID(),
         experience_id: null,
         company_name: "",
         job_title: "",
@@ -180,27 +192,33 @@ if (Array.isArray(initialValues?.experiences) && initialValues.experiences.lengt
     ]);
   };
 
-const handleExperienceChange = (key, field, value) => {
-  setExperiences((prev) =>
-    prev.map((exp) =>
-      exp._key === key ? { ...exp, [field]: value } : exp
-    )
-  );
-};
+  const handleExperienceChange = (key, field, value) => {
+    setExperiences((prev) =>
+      prev.map((exp) => (exp._key === key ? { ...exp, [field]: value } : exp))
+    );
+  };
 
+  const handleRemoveExperience = (key) => {
+    setExperiences((prev) => {
+      const expToRemove = prev.find((e) => e._key === key);
 
-const handleRemoveExperience = (key) => {
-  setExperiences((prev) => prev.filter((e) => e._key !== key));
-};
+      if (expToRemove?.experience_id) {
+        setDeletedExperienceIds((ids) =>
+          ids.includes(expToRemove.experience_id)
+            ? ids
+            : [...ids, expToRemove.experience_id]
+        );
+      }
 
+      return prev.filter((e) => e._key !== key);
+    });
+  };
 
   /* ================= SUBMIT ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const formData = new FormData(e.target);
-
-    // required explicit role
     formData.append("user_role_id", selectedRoleId);
 
     /* ---------- DOCUMENTS ---------- */
@@ -225,31 +243,32 @@ const handleRemoveExperience = (key) => {
     });
 
     /* ---------- EXPERIENCES ---------- */
-/* ---------- EXPERIENCES ---------- */
-const cleanedExperiences = experiences.map(({ _key, ...rest }) => rest);
+    const cleanedExperiences = experiences.map(({ _key, ...rest }) => rest);
+    formData.append("experience", JSON.stringify(cleanedExperiences));
 
-formData.append("experience", JSON.stringify(cleanedExperiences));
+    deletedExperienceIds.forEach((id) => {
+      formData.append("deleted_experience_ids", id);
+    });
 
-
+    /* ---------- DELETED DOCUMENTS (🔥 MISSING FIX) ---------- */
+    deletedDocumentIds.forEach((id) => {
+      formData.append("deleted_document_ids", id);
+    });
 
     await onSubmit(formData);
   };
 
   /* ================= RENDER ================= */
-        console.log("PERSONAL INFO STATE 👉", personalInfo);
-
   return (
     <form className="form-container" ref={formRef} onSubmit={handleSubmit}>
-
-   <PersonalInfoSection
-  personalInfo={personalInfo}
-  setPersonalInfo={setPersonalInfo}
-  photoPreview={photoPreview}
-  onPhotoChange={(e) =>
-    setPhotoPreview(URL.createObjectURL(e.target.files[0]))
-  }
-/>
-
+      <PersonalInfoSection
+        personalInfo={personalInfo}
+        setPersonalInfo={setPersonalInfo}
+        photoPreview={photoPreview}
+        onPhotoChange={(e) =>
+          setPhotoPreview(URL.createObjectURL(e.target.files[0]))
+        }
+      />
 
       <EmploymentSection
         initialValues={initialValues}
@@ -263,13 +282,12 @@ formData.append("experience", JSON.stringify(cleanedExperiences));
         setSelectedRoleId={setSelectedRoleId}
       />
 
-   <PreviousExperienceSection
-  experiences={experiences}
-  onAdd={handleAddExperience}
-  onChange={handleExperienceChange}
-  onRemove={handleRemoveExperience}
-/>
-
+      <PreviousExperienceSection
+        experiences={experiences}
+        onAdd={handleAddExperience}
+        onChange={handleExperienceChange}
+        onRemove={handleRemoveExperience}
+      />
 
       <DocumentsSection
         documents={documents}
@@ -284,7 +302,11 @@ formData.append("experience", JSON.stringify(cleanedExperiences));
       <EmergencyContactSection initialValues={initialValues} />
 
       <div className="form-actions" style={{ justifyContent: "flex-end" }}>
-        <button type="submit" className="btn btn-primary" disabled={!selectedRoleId}>
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={!selectedRoleId}
+        >
           <i className="fa-solid fa-save" /> Update Employee
         </button>
       </div>

@@ -187,7 +187,14 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
             </li>
 
             <li>
-              <a className="submenu-link">Compliance Documentation</a>
+              <NavLink
+                to="/admin/compliance-documentation" // 👈 your React route
+                className={({ isActive }) =>
+                  `submenu-link ${isActive ? "active-submenu" : ""}`
+                }
+              >
+                Compliance Documentation
+              </NavLink>
             </li>
           </ul>
         </li>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 
 export default function DocumentsSection({
   documents,
@@ -6,7 +6,7 @@ export default function DocumentsSection({
   onChange,
   onFilesChange,
   onRemoveFile,
-  onRemoveDocument,
+  onRemoveDocument, // (index, documentId)
 }) {
   /* cleanup blob URLs on unmount */
   useEffect(() => {
@@ -22,7 +22,7 @@ export default function DocumentsSection({
   }, [documents]);
 
   const handleFilesSelect = (index, files) => {
-    onFilesChange(index, files); // ✅ parent handles previews
+    onFilesChange(index, files); // parent handles previews
   };
 
   return (
@@ -37,7 +37,7 @@ export default function DocumentsSection({
 
         return (
           <div
-            key={index}
+            key={doc.id ?? index}
             className="exp-block"
             style={{
               border: "1px solid #ddd",
@@ -46,7 +46,9 @@ export default function DocumentsSection({
               marginBottom: 15,
             }}
           >
-            <h3 style={{ marginBottom: 10 }}>Document {index + 1}</h3>
+            <h3 style={{ marginBottom: 10 }}>
+              Document {index + 1}
+            </h3>
 
             <div className="form-grid">
               {/* Document Type */}
@@ -55,7 +57,9 @@ export default function DocumentsSection({
                 <select
                   className="form-select"
                   value={doc.type}
-                  onChange={(e) => onChange(index, "type", e.target.value)}
+                  onChange={(e) =>
+                    onChange(index, "type", e.target.value)
+                  }
                   required
                 >
                   <option value="">Select Document Type</option>
@@ -74,7 +78,9 @@ export default function DocumentsSection({
                   type="text"
                   className="form-input"
                   value={doc.number}
-                  onChange={(e) => onChange(index, "number", e.target.value)}
+                  onChange={(e) =>
+                    onChange(index, "number", e.target.value)
+                  }
                   required
                 />
               </div>
@@ -85,7 +91,9 @@ export default function DocumentsSection({
                 <select
                   className="form-select"
                   value={doc.country}
-                  onChange={(e) => onChange(index, "country", e.target.value)}
+                  onChange={(e) =>
+                    onChange(index, "country", e.target.value)
+                  }
                 >
                   <option value="">Select Country</option>
                   <option value="india">India</option>
@@ -127,7 +135,9 @@ export default function DocumentsSection({
                 <select
                   className="form-select"
                   value={doc.status}
-                  onChange={(e) => onChange(index, "status", e.target.value)}
+                  onChange={(e) =>
+                    onChange(index, "status", e.target.value)
+                  }
                 >
                   <option value="valid">Valid</option>
                   <option value="expired">Expired</option>
@@ -138,13 +148,17 @@ export default function DocumentsSection({
 
             {/* Upload */}
             <div className="form-group full-width" style={{ marginTop: 12 }}>
-              <label className="form-label">Upload Scans / Images / PDF</label>
+              <label className="form-label">
+                Upload Scans / Images / PDF
+              </label>
 
               <input
                 type="file"
                 accept="image/*,application/pdf"
                 multiple
-                onChange={(e) => handleFilesSelect(index, e.target.files)}
+                onChange={(e) =>
+                  handleFilesSelect(index, e.target.files)
+                }
                 className="form-input"
               />
 
@@ -197,7 +211,9 @@ export default function DocumentsSection({
 
                       <button
                         type="button"
-                        onClick={() => onRemoveFile(index, fi)}
+                        onClick={() =>
+                          onRemoveFile(index, fi)
+                        }
                         style={{
                           position: "absolute",
                           top: 4,
@@ -221,7 +237,9 @@ export default function DocumentsSection({
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={() => onRemoveDocument(index)}
+                onClick={() =>
+                  onRemoveDocument(index, doc.id)
+                }
               >
                 Remove Document
               </button>
@@ -230,7 +248,11 @@ export default function DocumentsSection({
         );
       })}
 
-      <button type="button" className="btn btn-primary" onClick={onAdd}>
+      <button
+        type="button"
+        className="btn btn-primary"
+        onClick={onAdd}
+      >
         <i className="fa-solid fa-plus"></i> Add Document
       </button>
     </div>

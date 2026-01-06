@@ -24,6 +24,11 @@ const PersonalEmploymentHistoryPage = () => {
   const [error, setError] = useState("");
 
   /* =====================
+     IMAGE MODAL STATE
+  ===================== */
+  const [isImageOpen, setIsImageOpen] = useState(false);
+
+  /* =====================
      FILTER STATE
   ===================== */
   const [fromDate, setFromDate] = useState("");
@@ -65,7 +70,6 @@ const PersonalEmploymentHistoryPage = () => {
         }));
 
         events.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-
         setHistory(events);
       } catch (err) {
         setError(err.message || "Something went wrong");
@@ -162,31 +166,94 @@ const PersonalEmploymentHistoryPage = () => {
 
           <div className="summary-box">
             <span className="summary-label">PROFILE COMPLETION</span>
-            <strong className="summary-value">{getProfileCompletion()}%</strong>
+            <strong className="summary-value">
+              {getProfileCompletion()}%
+            </strong>
           </div>
         </section>
 
         {/* ===== EMPLOYEE INFO ===== */}
         <section className="info-section">
-          <h3 className="section-title">Employee Information</h3>
+          {/* <h3 className="section-title">Employee Information</h3> */}
 
-          <div className="info-grid">
-            <div className="info-item">
-              <span className="label">Employee ID:</span>
-              <span className="value">{employee?.employee_id || "—"}</span>
+          <div className="employee-header">
+            {/* Profile Photo */}
+            <div
+              className="profile-photo"
+              onClick={() => employee?.image && setIsImageOpen(true)}
+              style={{ cursor: employee?.image ? "pointer" : "default" }}
+            >
+              {employee?.image ? (
+                <img
+                  src={employee.image}
+                  alt={employee.name || "Employee"}
+                  className="profile-photo-img"
+                />
+              ) : (
+                <span className="profile-initial">
+                  {employee?.name?.charAt(0)?.toUpperCase() || "U"}
+                </span>
+              )}
             </div>
 
-            <div className="info-item">
-              <span className="label">Official Email:</span>
-              <span className="value">{employee?.official_email || "—"}</span>
-            </div>
-
-            <div className="info-item">
-              <span className="label">Personal Email:</span>
-              <span className="value">{employee?.personal_email || "—"}</span>
+            {/* Info Grid */}
+            <div className="info-grid">
+              <div className="info-item">
+                <span className="label">Employee ID:</span>
+                <span className="value">
+                  {employee?.employee_id || "—"}
+                </span>
+              </div>
+            
+              <div className="info-item">
+                <span className="label">Phone:</span>
+                <span className="value">{employee?.phone || "—"}</span>
+              </div>
+             
+              <div className="info-item">
+                <span className="label">Official Email:</span>
+                <span className="value">
+                  {employee?.official_email || "—"}
+                </span>
+              </div>
+             <div className="info-item">
+                <span className="label">Name:</span>
+                <span className="value">{employee?.name || "—"}</span>
+              </div>
+              <div className="info-item">
+                <span className="label">Personal Email:</span>
+                <span className="value">
+                  {employee?.personal_email || "—"}
+                </span>
+              </div>
             </div>
           </div>
         </section>
+
+        {/* ===== IMAGE MODAL ===== */}
+        {isImageOpen && (
+          <div
+            className="image-modal"
+            onClick={() => setIsImageOpen(false)}
+          >
+            <div
+              className="image-modal-content"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="image-modal-close"
+                onClick={() => setIsImageOpen(false)}
+              >
+                ✕
+              </button>
+
+              <img
+                src={employee.image}
+                alt={employee.name}
+              />
+            </div>
+          </div>
+        )}
 
         {/* ===== FILTERS ===== */}
         <section className="filter-section">
@@ -226,12 +293,15 @@ const PersonalEmploymentHistoryPage = () => {
               {filteredHistory.map(({ date, item }, index) => (
                 <div className="timeline-row" key={index}>
                   <div className="timeline-date">
-                    {date ? new Date(date).toLocaleDateString("en-GB") : "—"}
+                    {date
+                      ? new Date(date).toLocaleDateString("en-GB")
+                      : "—"}
                   </div>
 
                   <div className="timeline-body">
                     <div className="timeline-title">
-                      {item.department || "—"} → {item.designation || "—"}
+                      {item.department || "—"} →{" "}
+                      {item.designation || "—"}
                     </div>
 
                     <div className="timeline-meta">
@@ -241,11 +311,15 @@ const PersonalEmploymentHistoryPage = () => {
                       {item.work_location && (
                         <span>Location: {item.work_location}</span>
                       )}
-                      {item.user_role && <span>Role: {item.user_role}</span>}
+                      {item.user_role && (
+                        <span>Role: {item.user_role}</span>
+                      )}
                     </div>
 
                     <div className="timeline-pay">
-                      {item.annual_ctc && <span>CTC ₹{item.annual_ctc}</span>}
+                      {item.annual_ctc && (
+                        <span>CTC ₹{item.annual_ctc}</span>
+                      )}
                       {item.basic_salary && (
                         <span>Basic ₹{item.basic_salary}</span>
                       )}
@@ -260,8 +334,7 @@ const PersonalEmploymentHistoryPage = () => {
           )}
         </section>
       </main>
-
-      {/* ===== STYLES ===== */}
+       {/* ===== STYLES ===== */}
       <style>{`
         .summary-grid {
           display: grid;
