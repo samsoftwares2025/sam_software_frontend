@@ -2559,3 +2559,199 @@ table.data-table tbody tr:hover {
     margin: 0 auto;
   }
 }
+
+
+
+
+ /* ticket view page */
+
+
+
+.ticket-box {
+   background: #fff;
+   padding: 25px;
+   border-radius: 10px;
+   width: 100%;
+   margin-top: 20px;
+   margin-bottom: 40px;
+   box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+}
+.ticket-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid #eee;
+}
+.ticket-row:last-child {
+  border-bottom: none;
+}
+.ticket-row label {
+  font-weight: 600;
+  color: #555;
+  width: 180px;
+}
+.ticket-row span {
+  flex: 1;
+  color: #222;
+}
+.file-actions {
+  display: flex;
+  gap: 10px;
+}
+.view-btn {
+  background: #4c8bf5;
+  color: #fff;
+}
+.download-btn {
+  background: #30bb6a;
+  color: #fff;
+}
+.btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  font-size: 14px;
+}
+.image-modal img {
+  max-width: 95vw;
+  max-height: 85vh;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+/* ---------------- MOBILE VIEW ---------------- */
+@media (max-width: 768px) {
+
+  .ticket-box {
+    padding: 18px;
+  }
+
+  .ticket-row {
+    display: block;
+    padding: 16px 0;
+    border-bottom: 1px solid #e9e9e9;
+  }
+
+  .ticket-row:last-child {
+    border-bottom: none;
+  }
+
+  .ticket-row label {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    color: #222 !important; /* darker heading */
+    margin-bottom: 6px;
+  }
+
+  .ticket-row span {
+    display: block;
+    font-size: 15px;
+    color: #444;
+    line-height: 1.6;
+    margin-left: 0 !important;
+  }
+
+  /* Buttons layout mobile */
+  .file-actions {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+
+/* FIX react-select in ticket-box */
+.ticket-box .react-select__control {
+  background-color: #fff !important;
+  color: #222 !important;
+}
+
+.ticket-box .react-select__menu {
+  background-color: #fff !important;
+  color: #222 !important;
+  z-index: 9999 !important;
+}
+
+.ticket-box .react-select__option {
+  background-color: #fff !important;
+  color: #222 !important;
+}
+
+.ticket-box .react-select__option--is-focused {
+  background-color: #f2f2f2 !important;
+  color: #222 !important;
+}
+
+.ticket-box .react-select__single-value {
+  color: #222 !important;
+}
+
+.ticket-box .react-select__placeholder {
+  color: #777 !important;
+}
+
+.ticket-box .react-select__input-container input {
+  color: #222 !important;
+}
+
+
+
+.same-size-select {
+  width: 100%;
+  height: 38px;             /* SAME HEIGHT AS REACT-SELECT */
+  padding: 6px 8px;         /* similar padding */
+  border-radius: 4px;       /* same rounded corners */
+  border: 1px solid #ccc;   /* same border style */
+  font-size: 14px;
+  background-color: #fff;
+  color: #222;
+}
+
+
+/* Common pill style */
+.status-pill {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Dot before text */
+.status-pill::before {
+  font-size: 10px;
+}
+
+/* STATUS COLORS */
+.status-pending {
+  background: #fff3cd;
+  color: #8a6d3b;
+}
+
+.status-in-progress {
+  background: #e6e0ff;
+  color: #5a3ec8;
+}
+
+.status-completed {
+  background: #d6ffe0;
+  color: #0d8b37;
+}
+
+.status-hold {
+  background: #ffe4e1;
+  color: #cc3b2e;
+}
+
+.status-cancelled {
+  background: #f8d7da;
+  color: #8a1c1c;
+}

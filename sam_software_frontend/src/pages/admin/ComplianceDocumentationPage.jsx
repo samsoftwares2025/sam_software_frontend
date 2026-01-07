@@ -5,13 +5,23 @@ import "../../assets/styles/admin.css";
 
 import { getSupportTickets } from "../../api/admin/support_tickets";
 
+/* ================= FILE URL NORMALIZER ================= */
+const getFileUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  return `${window.location.origin}${url}`;
+};
+
 function ComplianceDocumentationPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [openSection, setOpenSection] = useState("compliance");
+  const [openSection, setOpenSection] = useState("organization");
 
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  /* preview modal */
+  const [previewImage, setPreviewImage] = useState(null);
 
   /* ================= FILTER STATES ================= */
   const [searchTerm, setSearchTerm] = useState("");
@@ -20,6 +30,27 @@ function ComplianceDocumentationPage() {
   const [assignedTo, setAssignedTo] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+
+  /* ================= DOWNLOAD HELPER (SAME AS CompanyRulesPage) ================= */
+  const downloadFile = async (fileUrl, fileName = "attachment") => {
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download failed:", err);
+      alert("Unable to download file.");
+    }
+  };
 
   /* ================= FETCH TICKETS ================= */
   const fetchTickets = async () => {
@@ -36,10 +67,19 @@ function ComplianceDocumentationPage() {
         to_date: toDate,
       });
 
-      // ✅ FIX HERE
-      setTickets(
-        Array.isArray(res?.support_tickets) ? res.support_tickets : []
-      );
+      const normalized = Array.isArray(res?.support_tickets)
+        ? res.support_tickets.map((t) => ({
+            ...t,
+            submitted_by: t.submitted_by
+              ? { id: t.submitted_by, name: t.submitted_by_name }
+              : null,
+            assigned_to: t.assigned_to
+              ? { id: t.assigned_to, name: t.assigned_to_name }
+              : null,
+          }))
+        : [];
+
+      setTickets(normalized);
     } catch (err) {
       console.error(err);
       setError("Failed to load compliance tickets.");
@@ -50,24 +90,29 @@ function ComplianceDocumentationPage() {
 
   useEffect(() => {
     fetchTickets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ================= FILTERED DATA (CLIENT FALLBACK) ================= */
+  /* ================= FILTERED DATA ================= */
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
       if (
         searchTerm &&
         !t.subject?.toLowerCase().includes(searchTerm.toLowerCase())
-      ) {
+      )
         return false;
-      }
+
       if (status && t.status !== status) return false;
       if (submittedBy && t.submitted_by?.id !== Number(submittedBy))
         return false;
       if (assignedTo && t.assigned_to?.id !== Number(assignedTo)) return false;
+
+      if (fromDate && new Date(t.created_at) < new Date(fromDate)) return false;
+      if (toDate && new Date(t.created_at) > new Date(toDate)) return false;
+
       return true;
     });
-  }, [tickets, searchTerm, status, submittedBy, assignedTo]);
+  }, [tickets, searchTerm, status, submittedBy, assignedTo, fromDate, toDate]);
 
   /* ================= HELPERS ================= */
   const handleClearFilters = () => {
@@ -96,6 +141,7 @@ function ComplianceDocumentationPage() {
     ).values(),
   ];
 
+  /* ================= RENDER ================= */
   return (
     <div className="container">
       <Sidebar
@@ -128,7 +174,6 @@ function ComplianceDocumentationPage() {
               />
             </div>
 
-            {/* STATUS */}
             <select
               className="filter-select"
               value={status}
@@ -137,11 +182,11 @@ function ComplianceDocumentationPage() {
               <option value="">All Status</option>
               <option value="Pending">Pending</option>
               <option value="In Progress">In Progress</option>
-              <option value="Resolved">Resolved</option>
-              <option value="Closed">Closed</option>
+              <option value="Completed">Completed</option>
+              <option value="Hold">Hold</option>
+              <option value="Cancelled">Cancelled</option>
             </select>
 
-            {/* SUBMITTED BY */}
             <select
               className="filter-select"
               value={submittedBy}
@@ -155,7 +200,6 @@ function ComplianceDocumentationPage() {
               ))}
             </select>
 
-            {/* ASSIGNED TO */}
             <select
               className="filter-select"
               value={assignedTo}
@@ -169,7 +213,6 @@ function ComplianceDocumentationPage() {
               ))}
             </select>
 
-            {/* DATE RANGE */}
             <input
               type="date"
               className="filter-select"
@@ -210,49 +253,76 @@ function ComplianceDocumentationPage() {
                 <thead>
                   <tr>
                     <th>#</th>
+                    <th>Date</th>
                     <th>Subject</th>
                     <th>Submitted By</th>
                     <th>Assigned To</th>
                     <th>Status</th>
                     <th>Attachment</th>
-                    <th>Created At</th>
                     <th>Action</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {filteredTickets.map((t, index) => (
-                    <tr key={t.id}>
-                      <td>{index + 1}</td>
-                      <td>{t.subject}</td>
-                      <td>{t.submitted_by?.name || "-"}</td>
-                      <td>{t.assigned_to?.name || "-"}</td>
-                      <td>
-                        <span
-                          className={`status-pill status-${t.status?.toLowerCase()}`}
-                        >
-                          ● {t.status}
-                        </span>
-                      </td>
-                      <td>
-                        {t.attachment?.url ? (
-                          <a
-                            href={t.attachment.url}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {t.attachment.name || "View"}
-                          </a>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
+                  {filteredTickets.map((t, index) => {
+                    const file = getFileUrl(t.attachment?.url);
+                    const isImage =
+                      file && /\.(jpg|jpeg|png|gif|webp)$/i.test(file);
 
-                      <td>
-                        {new Date(t.created_at).toLocaleDateString("en-GB")}
-                      </td>
-                      <td>
-                        <div className="table-actions">
+                    return (
+                      <tr key={t.id}>
+                        <td>{index + 1}</td>
+                        <td>
+                          {new Date(t.created_at).toLocaleDateString("en-GB")}
+                        </td>
+                        <td>{t.subject}</td>
+                        <td>{t.submitted_by?.name || "-"}</td>
+                        <td>{t.assigned_to?.name || "-"}</td>
+
+                        <td>
+                          <span
+                            className={`status-pill status-${t.status
+                              .replace(/\s+/g, "-")
+                              .toLowerCase()}`}
+                          >
+                            ● {t.status}
+                          </span>
+                        </td>
+
+                        <td>
+                          {file ? (
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <button
+                                className="icon-btn"
+                                title="View"
+                                onClick={() =>
+                                  isImage
+                                    ? setPreviewImage(file)
+                                    : window.open(file, "_blank")
+                                }
+                              >
+                                <i className="fa-solid fa-eye" />
+                              </button>
+
+                              <button
+                                className="icon-btn"
+                                title="Download"
+                                onClick={() =>
+                                  downloadFile(
+                                    file,
+                                    t.attachment?.name || "attachment"
+                                  )
+                                }
+                              >
+                                <i className="fa-solid fa-download" />
+                              </button>
+                            </div>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+
+                        <td>
                           <button
                             className="icon-btn view"
                             title="View Ticket"
@@ -262,10 +332,19 @@ function ComplianceDocumentationPage() {
                           >
                             <i className="fa-solid fa-eye" />
                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                          <button
+                            className="icon-btn edit"
+                            title="Edit Rule"
+                            onClick={() =>
+                              (window.location.href = `/admin/update/compliance-ticket/${t.id}`)
+                            }
+                          >
+                            <i className="fa-solid fa-pen" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
 
                   {filteredTickets.length === 0 && (
                     <tr>
@@ -281,6 +360,44 @@ function ComplianceDocumentationPage() {
         </div>
       </main>
 
+      {/* IMAGE PREVIEW MODAL */}
+      {previewImage && (
+        <div className="modal-backdrop" style={backdropStyle}>
+          <div style={previewModalStyle}>
+            <img
+              src={previewImage}
+              alt="Preview"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "80vh",
+                objectFit: "contain",
+              }}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                justifyContent: "flex-end",
+                marginTop: 12,
+              }}
+            >
+              <button
+                className="icon-btn"
+                title="Download"
+                onClick={() => downloadFile(previewImage, "attachment")}
+              >
+                <i className="fa-solid fa-download" />
+              </button>
+
+              <button className="btn" onClick={() => setPreviewImage(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
         className={`sidebar-overlay ${isSidebarOpen ? "show" : ""}`}
         onClick={() => setIsSidebarOpen(false)}
@@ -288,5 +405,23 @@ function ComplianceDocumentationPage() {
     </div>
   );
 }
+
+/* ================= MODAL STYLES ================= */
+const backdropStyle = {
+  position: "fixed",
+  inset: 0,
+  backgroundColor: "rgba(0,0,0,0.45)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 2000,
+};
+
+const previewModalStyle = {
+  background: "#fff",
+  padding: 16,
+  borderRadius: 8,
+  maxWidth: "95%",
+};
 
 export default ComplianceDocumentationPage;

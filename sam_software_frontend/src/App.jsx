@@ -34,7 +34,9 @@ import AddRolePage from "./pages/admin/AddRolePage";
 import UpdateRolePage from "./pages/admin/UpdateRolePage";
 import AssignRole from "./pages/admin/AssignRole";
 import PersonalEmploymentHistoryPage from "./pages/admin/PersonalEmploymentHistoryPage";
-import ComplianceDocumentationPage from "./pages/admin/ComplianceDocumentationPage";
+import ComplianceDocumentationPage from "./pages/admin/ComplianceDocumentationPage";   
+import ComplianceTicketDetails from "./pages/admin/ComplianceTicketDetails";   
+import UpdateComplianceTicketDetails from "./pages/admin/UpdateComplianceTicketDetails";   
 import "./App.css";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -77,6 +79,8 @@ function App() {
         <Route path="/admin/assign-role/:roleId" element={<ProtectedRoute><AssignRole /></ProtectedRoute>}/>
         <Route path="/admin/view-employment-history/:id" element={<ProtectedRoute><PersonalEmploymentHistoryPage /></ProtectedRoute>}/>
         <Route path="/admin/compliance-documentation" element={<ProtectedRoute><ComplianceDocumentationPage /></ProtectedRoute>}/>
+        <Route path="/admin/compliance-ticket/:id" element={<ProtectedRoute><ComplianceTicketDetails /></ProtectedRoute>}/>
+        <Route path="/admin/update/compliance-ticket/:id" element={<ProtectedRoute><UpdateComplianceTicketDetails /></ProtectedRoute>}/>
 
       </Routes>
     </BrowserRouter>

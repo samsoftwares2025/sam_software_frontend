@@ -47,60 +47,48 @@ export const getSupportTickets = async (filters = {}) => {
  * Get Single Support Ticket
  * ===============================
  */
-export const getSupportTicketById = async (ticketId) => {
-  const userId = getUserId();
 
-  const { data } = await http.post(
-    "/user-view-support-ticket/",
-    {
-      user_id: userId,
-      ticket_id: ticketId,
-    }
-  );
+
+export const getSupportTicketById = async (ticketId) => {
+  const userId = localStorage.getItem("userId");
+
+
+  if (!userId) {
+    throw new Error("Session expired");
+  }
+
+  const { data } = await http.post("/users/user-get-support-ticket/", {
+    user_id: userId,
+    ticket_id: ticketId,
+
+  });
 
   return data;
 };
+
 
 /**
  * ===============================
  * Update Ticket Status
  * ===============================
  */
-export const updateSupportTicketStatus = async (ticketId, status) => {
-  const userId = getUserId();
+export const updateSupportTicket = async (payload) => {
+  const userId = localStorage.getItem("userId");
 
-  const payload = {
-    user_id: userId,
-    ticket_id: ticketId,
-    status,
-  };
+  const form = new FormData();
+  form.append("user_id", userId);
+  form.append("ticket_id", payload.ticket_id);
+  form.append("assigned_user_id", payload.assigned_to);
+  form.append("status", payload.status);
 
   const { data } = await http.post(
-    "/user-update-support-ticket-status/",
-    payload
+    "/hr/assign-and-change-status-support-ticket/",
+    form,
+    {
+      headers: { "Content-Type": "multipart/form-data" } // <--- FIX HERE
+    }
   );
 
   return data;
 };
 
-/**
- * ===============================
- * Assign Ticket to User
- * ===============================
- */
-export const assignSupportTicket = async (ticketId, assignedToId) => {
-  const userId = getUserId();
-
-  const payload = {
-    user_id: userId,
-    ticket_id: ticketId,
-    assigned_to: assignedToId,
-  };
-
-  const { data } = await http.post(
-    "/user-assign-support-ticket/",
-    payload
-  );
-
-  return data;
-};
