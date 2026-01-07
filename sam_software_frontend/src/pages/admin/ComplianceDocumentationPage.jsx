@@ -1,9 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import "../../assets/styles/admin.css";
 
-import { getSupportTickets } from "../../api/admin/support_tickets";
+import { filterSupportTickets } from "../../api/admin/support_tickets";
+import { getEmployeesList } from "../../api/admin/employees";
+
+import Select from "react-select";
 
 /* ================= FILE URL NORMALIZER ================= */
 const getFileUrl = (url) => {
@@ -17,10 +20,12 @@ function ComplianceDocumentationPage() {
   const [openSection, setOpenSection] = useState("organization");
 
   const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [employees, setEmployees] = useState([]);
+
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  /* preview modal */
+  /* Preview modal */
   const [previewImage, setPreviewImage] = useState(null);
 
   /* ================= FILTER STATES ================= */
@@ -28,10 +33,14 @@ function ComplianceDocumentationPage() {
   const [status, setStatus] = useState("");
   const [submittedBy, setSubmittedBy] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
 
-  /* ================= DOWNLOAD HELPER (SAME AS CompanyRulesPage) ================= */
+  /* ================= PAGINATION ================= */
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
+  /* ================= DOWNLOAD FILE ================= */
   const downloadFile = async (fileUrl, fileName = "attachment") => {
     try {
       const response = await fetch(fileUrl);
@@ -52,19 +61,35 @@ function ComplianceDocumentationPage() {
     }
   };
 
+  /* ================= EMPLOYEE DROPDOWN OPTIONS ================= */
+  const employeeOptions = employees.map((e) => ({
+    value: e.id,
+    label: `${e.name} (${e.employee_id})`,
+  }));
+
+  /* ================= FETCH EMPLOYEES ================= */
+  const fetchEmployees = async () => {
+    try {
+      const list = await getEmployeesList();
+      setEmployees(list);
+    } catch (err) {
+      console.error("Employee list error:", err);
+    }
+  };
+
   /* ================= FETCH TICKETS ================= */
   const fetchTickets = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const res = await getSupportTickets({
+      const res = await filterSupportTickets({
         search: searchTerm,
         status,
         submitted_by: submittedBy,
         assigned_to: assignedTo,
-        from_date: fromDate,
-        to_date: toDate,
+        page,
+        page_size: pageSize,
       });
 
       const normalized = Array.isArray(res?.support_tickets)
@@ -80,39 +105,26 @@ function ComplianceDocumentationPage() {
         : [];
 
       setTickets(normalized);
+
+      /* Pagination */
+      setTotalPages(res.pagination.total_pages);
+      setTotalCount(res.pagination.total_records);
     } catch (err) {
       console.error(err);
       setError("Failed to load compliance tickets.");
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   useEffect(() => {
+    fetchEmployees();
     fetchTickets();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ================= FILTERED DATA ================= */
-  const filteredTickets = useMemo(() => {
-    return tickets.filter((t) => {
-      if (
-        searchTerm &&
-        !t.subject?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-        return false;
-
-      if (status && t.status !== status) return false;
-      if (submittedBy && t.submitted_by?.id !== Number(submittedBy))
-        return false;
-      if (assignedTo && t.assigned_to?.id !== Number(assignedTo)) return false;
-
-      if (fromDate && new Date(t.created_at) < new Date(fromDate)) return false;
-      if (toDate && new Date(t.created_at) > new Date(toDate)) return false;
-
-      return true;
-    });
-  }, [tickets, searchTerm, status, submittedBy, assignedTo, fromDate, toDate]);
+  useEffect(() => {
+    fetchTickets();
+  }, [searchTerm, status, submittedBy, assignedTo, page]);
 
   /* ================= HELPERS ================= */
   const handleClearFilters = () => {
@@ -120,26 +132,16 @@ function ComplianceDocumentationPage() {
     setStatus("");
     setSubmittedBy("");
     setAssignedTo("");
-    setFromDate("");
-    setToDate("");
+    setPage(1);
     fetchTickets();
   };
 
-  const uniqueSubmitters = [
-    ...new Map(
-      tickets
-        .filter((t) => t.submitted_by)
-        .map((t) => [t.submitted_by.id, t.submitted_by])
-    ).values(),
-  ];
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) setPage(newPage);
+  };
 
-  const uniqueAssignees = [
-    ...new Map(
-      tickets
-        .filter((t) => t.assigned_to)
-        .map((t) => [t.assigned_to.id, t.assigned_to])
-    ).values(),
-  ];
+  const startRow = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endRow = Math.min(page * pageSize, totalCount);
 
   /* ================= RENDER ================= */
   return (
@@ -157,27 +159,33 @@ function ComplianceDocumentationPage() {
 
         <div className="page-title">
           <h3>Compliance Documentation</h3>
-          <p className="subtitle">
-            View, filter and manage compliance support tickets.
-          </p>
+          <p className="subtitle">View, filter and manage support tickets.</p>
         </div>
 
         {/* ================= FILTERS ================= */}
         <div className="filters-container">
           <div className="filters-left">
+            {/* SEARCH INPUT */}
             <div className="search-input">
               <i className="fa-solid fa-magnifying-glass" />
               <input
-                placeholder="Search by subject..."
+                placeholder="Search by Tracking id,subject,content..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setPage(1);
+                  setSearchTerm(e.target.value);
+                }}
               />
             </div>
 
+            {/* STATUS */}
             <select
               className="filter-select"
               value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={(e) => {
+                setPage(1);
+                setStatus(e.target.value);
+              }}
             >
               <option value="">All Status</option>
               <option value="Pending">Pending</option>
@@ -187,44 +195,35 @@ function ComplianceDocumentationPage() {
               <option value="Cancelled">Cancelled</option>
             </select>
 
-            <select
-              className="filter-select"
-              value={submittedBy}
-              onChange={(e) => setSubmittedBy(e.target.value)}
-            >
-              <option value="">Submitted By</option>
-              {uniqueSubmitters.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
+            {/* SUBMITTED BY - SEARCHABLE */}
+            <div style={{ width: 200 }}>
+              <Select
+                options={employeeOptions}
+                placeholder="Submitted By"
+                isClearable
+                classNamePrefix="react-select"
+                value={employeeOptions.find((o) => o.value === Number(submittedBy)) || null}
+                onChange={(opt) => {
+                  setPage(1);
+                  setSubmittedBy(opt ? opt.value : "");
+                }}
+              />
+            </div>
 
-            <select
-              className="filter-select"
-              value={assignedTo}
-              onChange={(e) => setAssignedTo(e.target.value)}
-            >
-              <option value="">Assigned To</option>
-              {uniqueAssignees.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="date"
-              className="filter-select"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-            />
-            <input
-              type="date"
-              className="filter-select"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-            />
+            {/* ASSIGNED TO - SEARCHABLE */}
+            <div style={{ width: 200 }}>
+              <Select
+                options={employeeOptions}
+                placeholder="Assigned To"
+                isClearable
+                classNamePrefix="react-select"
+                value={employeeOptions.find((o) => o.value === Number(assignedTo)) || null}
+                onChange={(opt) => {
+                  setPage(1);
+                  setAssignedTo(opt ? opt.value : "");
+                }}
+              />
+            </div>
           </div>
 
           <button className="btn btn-ghost" onClick={handleClearFilters}>
@@ -236,10 +235,7 @@ function ComplianceDocumentationPage() {
         <div className="table-container">
           <div className="table-header-bar">
             <h4>
-              Compliance Tickets{" "}
-              <span className="badge-pill">
-                Total: {filteredTickets.length}
-              </span>
+              Compliance Tickets <span className="badge-pill">Total: {totalCount}</span>
             </h4>
           </div>
 
@@ -248,114 +244,147 @@ function ComplianceDocumentationPage() {
           ) : error ? (
             <div style={{ padding: "1rem", color: "orange" }}>{error}</div>
           ) : (
-            <div className="data-table-wrapper">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Date</th>
-                    <th>Subject</th>
-                    <th>Submitted By</th>
-                    <th>Assigned To</th>
-                    <th>Status</th>
-                    <th>Attachment</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
+            <>
+              <div className="data-table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Date</th>
+                      <th>Tracking ID</th>
+                      <th>Subject</th>
+                      <th>Submitted By</th>
+                      <th>Assigned To</th>
+                      <th>Status</th>
+                      <th>Attachment</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
 
-                <tbody>
-                  {filteredTickets.map((t, index) => {
-                    const file = getFileUrl(t.attachment?.url);
-                    const isImage =
-                      file && /\.(jpg|jpeg|png|gif|webp)$/i.test(file);
+                  <tbody>
+                    {tickets.map((t, index) => {
+                      const file = getFileUrl(t.attachment?.url);
+                      const fileName = t.attachment?.name || "attachment";
+                      const isImage =
+                        file && /\.(jpg|jpeg|png|gif|webp)$/i.test(file);
 
-                    return (
-                      <tr key={t.id}>
-                        <td>{index + 1}</td>
-                        <td>
-                          {new Date(t.created_at).toLocaleDateString("en-GB")}
-                        </td>
-                        <td>{t.subject}</td>
-                        <td>{t.submitted_by?.name || "-"}</td>
-                        <td>{t.assigned_to?.name || "-"}</td>
+                      return (
+                        <tr key={t.id}>
+                          <td>{startRow + index}</td>
 
-                        <td>
-                          <span
-                            className={`status-pill status-${t.status
-                              .replace(/\s+/g, "-")
-                              .toLowerCase()}`}
-                          >
-                            ● {t.status}
-                          </span>
-                        </td>
+                          <td>{new Date(t.created_at).toLocaleDateString("en-GB")}</td>
 
-                        <td>
-                          {file ? (
-                            <div style={{ display: "flex", gap: 8 }}>
-                              <button
-                                className="icon-btn"
-                                title="View"
-                                onClick={() =>
-                                  isImage
-                                    ? setPreviewImage(file)
-                                    : window.open(file, "_blank")
-                                }
-                              >
-                                <i className="fa-solid fa-eye" />
-                              </button>
+                          <td>{t.tracking_id}</td>
+                          <td>{t.subject}</td>
 
-                              <button
-                                className="icon-btn"
-                                title="Download"
-                                onClick={() =>
-                                  downloadFile(
-                                    file,
-                                    t.attachment?.name || "attachment"
-                                  )
-                                }
-                              >
-                                <i className="fa-solid fa-download" />
-                              </button>
-                            </div>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
+                          <td>{t.submitted_by?.name || "-"}</td>
 
-                        <td>
-                          <button
-                            className="icon-btn view"
-                            title="View Ticket"
-                            onClick={() =>
-                              (window.location.href = `/admin/compliance-ticket/${t.id}`)
-                            }
-                          >
-                            <i className="fa-solid fa-eye" />
-                          </button>
-                          <button
-                            className="icon-btn edit"
-                            title="Edit Rule"
-                            onClick={() =>
-                              (window.location.href = `/admin/update/compliance-ticket/${t.id}`)
-                            }
-                          >
-                            <i className="fa-solid fa-pen" />
-                          </button>
+                          <td>{t.assigned_to?.name || "-"}</td>
+
+                          <td>
+                            <span
+                              className={`status-pill status-${t.status
+                                .replace(/\s+/g, "-")
+                                .toLowerCase()}`}
+                            >
+                              ● {t.status}
+                            </span>
+                          </td>
+
+                          <td>
+                            {file ? (
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <button
+                                  className="icon-btn"
+                                  title="View"
+                                  onClick={() =>
+                                    isImage
+                                      ? setPreviewImage(file)
+                                      : window.open(file, "_blank")
+                                  }
+                                >
+                                  <i className="fa-solid fa-eye" />
+                                </button>
+
+                                <button
+                                  className="icon-btn"
+                                  title="Download"
+                                  onClick={() => downloadFile(file, fileName)}
+                                >
+                                  <i className="fa-solid fa-download" />
+                                </button>
+                              </div>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+
+                          <td>
+                            <button
+                              className="icon-btn view"
+                              onClick={() =>
+                                (window.location.href = `/admin/compliance-ticket/${t.id}`)
+                              }
+                            >
+                              <i className="fa-solid fa-eye" />
+                            </button>
+
+                            <button
+                              className="icon-btn edit"
+                              onClick={() =>
+                                (window.location.href =
+                                  `/admin/update/compliance-ticket/${t.id}`)
+                              }
+                            >
+                              <i className="fa-solid fa-pen" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                    {tickets.length === 0 && (
+                      <tr>
+                        <td colSpan={8} style={{ textAlign: "center" }}>
+                          No tickets found.
                         </td>
                       </tr>
-                    );
-                  })}
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-                  {filteredTickets.length === 0 && (
-                    <tr>
-                      <td colSpan={8} style={{ textAlign: "center" }}>
-                        No tickets found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+              {/* ================= PAGINATION FOOTER ================= */}
+              <div className="table-footer">
+                <div id="tableInfo">
+                  Showing {startRow} to {endRow} of {totalCount} tickets
+                </div>
+
+                <div className="pagination">
+                  <button disabled={page === 1} onClick={() => handlePageChange(page - 1)}>
+                    <i className="fa-solid fa-angle-left"></i>
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      className={p === page ? "active-page" : ""}
+                      onClick={() => handlePageChange(p)}
+                      disabled={p === page}
+                    >
+                      {p}
+                    </button>
+                  ))}
+
+                  <button
+                    disabled={page === totalPages}
+                    onClick={() => handlePageChange(page + 1)}
+                  >
+                    <i className="fa-solid fa-angle-right"></i>
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </main>
@@ -385,7 +414,7 @@ function ComplianceDocumentationPage() {
               <button
                 className="icon-btn"
                 title="Download"
-                onClick={() => downloadFile(previewImage, "attachment")}
+                onClick={() => downloadFile(previewImage)}
               >
                 <i className="fa-solid fa-download" />
               </button>

@@ -92,3 +92,22 @@ export const updateSupportTicket = async (payload) => {
   return data;
 };
 
+
+
+
+export const filterSupportTickets = async (filters) => {
+  const userId = localStorage.getItem("userId");
+
+  const body = {
+    user_id: Number(userId),
+    page: filters.page || 1,
+    page_size: filters.page_size || 20,
+    status: filters.status || "",
+    search: filters.search || "",
+    assigned_to: filters.assigned_to || "",
+    submitted_by: filters.submitted_by || "",
+  };
+
+  const { data } = await http.post("/hr/filter-support-ticket/", body);
+  return data;
+};
