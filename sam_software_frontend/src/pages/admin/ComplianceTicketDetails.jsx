@@ -91,7 +91,10 @@ function ComplianceTicketDetails() {
               {new Date(ticket.created_at).toLocaleDateString("en-GB")}
             </span>
           </div>
-
+         <div className="ticket-row">
+            <label>Tracking ID</label>
+            <span>{ticket.tracking_id}</span>
+          </div>
           <div className="ticket-row">
             <label>Subject</label>
             <span>{ticket.subject}</span>

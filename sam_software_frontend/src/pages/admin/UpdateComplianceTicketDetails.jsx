@@ -161,7 +161,10 @@ function UpdateComplianceTicketDetails() {
                   : "-"}
               </span>
             </div>
-
+          <div className="ticket-row">
+            <label>Tracking ID</label>
+            <span>{ticket.tracking_id}</span>
+          </div>
             <div className="ticket-row">
               <label>Subject</label>
               <span>{ticket.subject}</span>

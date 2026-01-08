@@ -198,7 +198,34 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
             </li>
           </ul>
         </li>
+       {/* Tickets (active) */}
+        <li className={navHasSubmenu("tickets")}>
+          <button
+            className="nav-toggle"
+            aria-expanded={openSection === "tickets"}
+            onClick={() => handleSectionToggle("tickets")}
+          >
+            <span className="nav-icon">
+              <i className="fa-solid fa-building" />
+            </span>
+            <span className="nav-text">Supporting Tickets</span>
+            <span className="nav-caret">▸</span>
+          </button>
+          <ul className="submenu" aria-hidden={submenuHidden("tickets")}>
+            <li>
+              <NavLink
+                to="/admin/ticket-types" // 👈 your React route
+                className={({ isActive }) =>
+                  `submenu-link ${isActive ? "active-submenu" : ""}`
+                }
+              >
+                Types
+              </NavLink>
+            </li>
+           
 
+          </ul>
+        </li>
         {/* Recruitment & ATS */}
         <li className={navHasSubmenu("recruitment")}>
           <button

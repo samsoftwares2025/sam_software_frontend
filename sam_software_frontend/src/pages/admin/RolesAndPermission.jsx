@@ -125,8 +125,6 @@ const RolesPermissions = () => {
                 <thead>
                   <tr>
                     <th>Role Name</th>
-                    <th>Company</th>
-                    <th>Status</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -143,12 +141,7 @@ const RolesPermissions = () => {
                   {roles.map((role) => (
                     <tr key={role.id}>
                       <td className="emp-name">{role.role}</td>
-                      <td>{role.company_name}</td>
-                      <td>
-                        <span className="status-pill status-active">
-                          Active
-                        </span>
-                      </td>
+                     
                       <td>
                         <div className="table-actions">
                           {/* Assign */}

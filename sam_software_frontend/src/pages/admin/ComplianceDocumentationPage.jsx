@@ -292,6 +292,7 @@ function ComplianceDocumentationPage() {
                           </td>
 
                           <td>
+                            
                             {file ? (
                               <div style={{ display: "flex", gap: 8 }}>
                                 <button
@@ -320,6 +321,7 @@ function ComplianceDocumentationPage() {
                           </td>
 
                           <td>
+                            <div className="table-actions">
                             <button
                               className="icon-btn view"
                               onClick={() =>
@@ -338,6 +340,7 @@ function ComplianceDocumentationPage() {
                             >
                               <i className="fa-solid fa-pen" />
                             </button>
+                            </div>
                           </td>
                         </tr>
                       );
