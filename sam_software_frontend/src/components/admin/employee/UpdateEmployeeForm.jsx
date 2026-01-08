@@ -9,41 +9,88 @@ import PreviousExperienceSection from "./PreviousExperienceSection";
 
 import "../../../assets/styles/admin.css";
 
+/* ===========================================================
+   SUCCESS MODAL (for update)
+=========================================================== */
+const SuccessModal = ({ onClose }) => (
+  <div className="modal-overlay">
+    <div className="modal-card">
+      <div className="success-icon">
+        <i className="fa-solid fa-circle-check"></i>
+      </div>
+      <h2>Employee Updated Successfully</h2>
+      <p>The employee profile has been updated.</p>
+      <button className="btn btn-primary" onClick={onClose}>
+        OK
+      </button>
+    </div>
+  </div>
+);
+
+/* ===========================================================
+   ERROR MODAL
+=========================================================== */
+const ErrorModal = ({ onClose }) => (
+  <div className="modal-overlay">
+    <div className="modal-card error">
+      <div className="error-icon">
+        <i className="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h2>⚠️ Validation Error</h2>
+      <p>Fix the highlighted duplicate fields before submitting.</p>
+      <button className="btn btn-primary" onClick={onClose}>
+        OK
+      </button>
+    </div>
+  </div>
+);
+
+/* ===========================================================
+   GLOBAL DUPLICATE ERROR STRUCTURE
+=========================================================== */
+const initialErrorState = {
+  personal_email: "",
+  phone: "",
+  official_email: "",
+  employee_id: "",
+  emergency_contact_number: "",
+  emergency_contact_email: "",
+  account_number: "",
+};
+
 export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
   const formRef = useRef(null);
+
+  const [formErrors, setFormErrors] = useState(initialErrorState);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const [personalInfo, setPersonalInfo] = useState({});
   const [photoPreview, setPhotoPreview] = useState(null);
 
-  /* ================= TRACK DELETED ================= */
   const [deletedExperienceIds, setDeletedExperienceIds] = useState([]);
   const [deletedDocumentIds, setDeletedDocumentIds] = useState([]);
 
-  /* ================= EMPLOYMENT ================= */
   const [selectedEmploymentType, setSelectedEmploymentType] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedDesignation, setSelectedDesignation] = useState("");
   const [selectedRoleId, setSelectedRoleId] = useState("");
 
-  /* ================= DOCUMENTS ================= */
   const [documents, setDocuments] = useState([]);
-
-  /* ================= EXPERIENCES ================= */
   const [experiences, setExperiences] = useState([]);
 
-  const toDateInput = (value) => {
-    if (!value) return "";
-    return value.split("T")[0];
-  };
+  const toDateInput = (value) => (value ? value.split("T")[0] : "");
 
-  /* ================= PERSONAL INFO ================= */
+  /* ===========================================================
+     LOAD PERSONAL INFO
+  ============================================================ */
   useEffect(() => {
     const emp = initialValues?.employee ?? initialValues;
     if (!emp) return;
 
     setPersonalInfo({
       name: emp.name ?? "",
-      date_of_birth: emp.date_of_birth ?? "",
+      date_of_birth: toDateInput(emp.date_of_birth),
       gender: emp.gender ?? "",
       personal_email: emp.personal_email ?? "",
       phone: emp.phone ?? "",
@@ -56,7 +103,9 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     });
   }, [initialValues]);
 
-  /* ================= SYNC INITIAL VALUES ================= */
+  /* ===========================================================
+     LOAD OTHER EMPLOYEE DATA
+  ============================================================ */
   useEffect(() => {
     if (initialValues?.image) setPhotoPreview(initialValues.image);
 
@@ -65,8 +114,8 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     setSelectedDesignation(initialValues?.designation_id || "");
     setSelectedRoleId(initialValues?.user_role_id || "");
 
-    /* ---------- DOCUMENTS ---------- */
-    if (Array.isArray(initialValues?.documents) && initialValues.documents.length) {
+    /* ------------------- DOCUMENTS ------------------- */
+    if (Array.isArray(initialValues?.documents)) {
       setDocuments(
         initialValues.documents.map((doc) => ({
           id: doc.document_id,
@@ -89,8 +138,8 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
       setDocuments([{ number: "", files: [], previews: [] }]);
     }
 
-    /* ---------- EXPERIENCES ---------- */
-    if (Array.isArray(initialValues?.experiences) && initialValues.experiences.length) {
+    /* ------------------- EXPERIENCE ------------------- */
+    if (Array.isArray(initialValues?.experiences)) {
       setExperiences(
         initialValues.experiences.map((exp) => ({
           _key: exp.experience_id ?? exp.id ?? crypto.randomUUID(),
@@ -117,22 +166,26 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     }
   }, [initialValues]);
 
-  /* ================= DOCUMENT HANDLERS ================= */
+  /* ===========================================================
+     DOC HANDLERS
+  ============================================================ */
   const handleAddDocument = () => {
     setDocuments((prev) => [...prev, { number: "", files: [], previews: [] }]);
   };
 
-  const handleDocumentChange = (index, field, value) => {
+  const handleDocumentChange = (idx, field, value) => {
     setDocuments((prev) =>
-      prev.map((doc, i) => (i === index ? { ...doc, [field]: value } : doc))
+      prev.map((doc, i) =>
+        i === idx ? { ...doc, [field]: value } : doc
+      )
     );
   };
 
-  const handleDocumentFilesChange = (index, files) => {
+  const handleDocumentFilesChange = (idx, files) => {
     const arr = Array.from(files);
     setDocuments((prev) =>
       prev.map((doc, i) =>
-        i === index
+        i === idx
           ? {
               ...doc,
               files: [...doc.files, ...arr],
@@ -144,6 +197,20 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
           : doc
       )
     );
+  };
+
+  const handleRemoveDocument = (index) => {
+    setDocuments((prev) => {
+      const doc = prev[index];
+
+      if (doc?.id) {
+        setDeletedDocumentIds((ids) =>
+          ids.includes(doc.id) ? ids : [...ids, doc.id]
+        );
+      }
+
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleRemoveDocumentFile = (docIdx, fileIdx) => {
@@ -160,23 +227,9 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     );
   };
 
-  const handleRemoveDocument = (index) => {
-    setDocuments((prev) => {
-      const docToRemove = prev[index];
-
-      if (docToRemove?.id) {
-        setDeletedDocumentIds((ids) =>
-          ids.includes(docToRemove.id)
-            ? ids
-            : [...ids, docToRemove.id]
-        );
-      }
-
-      return prev.filter((_, i) => i !== index);
-    });
-  };
-
-  /* ================= EXPERIENCE HANDLERS ================= */
+  /* ===========================================================
+     EXPERIENCE HANDLERS
+  ============================================================ */
   const handleAddExperience = () => {
     setExperiences((prev) => [
       ...prev,
@@ -194,19 +247,21 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
 
   const handleExperienceChange = (key, field, value) => {
     setExperiences((prev) =>
-      prev.map((exp) => (exp._key === key ? { ...exp, [field]: value } : exp))
+      prev.map((exp) =>
+        exp._key === key ? { ...exp, [field]: value } : exp
+      )
     );
   };
 
   const handleRemoveExperience = (key) => {
     setExperiences((prev) => {
-      const expToRemove = prev.find((e) => e._key === key);
+      const removed = prev.find((e) => e._key === key);
 
-      if (expToRemove?.experience_id) {
+      if (removed?.experience_id) {
         setDeletedExperienceIds((ids) =>
-          ids.includes(expToRemove.experience_id)
+          ids.includes(removed.experience_id)
             ? ids
-            : [...ids, expToRemove.experience_id]
+            : [...ids, removed.experience_id]
         );
       }
 
@@ -214,14 +269,23 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     });
   };
 
-  /* ================= SUBMIT ================= */
+  /* ===========================================================
+     SUBMIT HANDLER
+  ============================================================ */
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // ❌ BLOCK IF ANY DUPLICATE ERRORS
+    const hasErrors = Object.values(formErrors).some((err) => err !== "");
+    if (hasErrors) {
+      setShowErrorModal(true);
+      return;
+    }
 
     const formData = new FormData(e.target);
     formData.append("user_role_id", selectedRoleId);
 
-    /* ---------- DOCUMENTS ---------- */
+    /* ----- DOCS ----- */
     const mappedDocs = documents.map((doc, idx) => ({
       document_id: doc.id,
       document_type: doc.type,
@@ -236,80 +300,106 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
 
     formData.append("documents", JSON.stringify(mappedDocs));
 
-    documents.forEach((doc, idx) => {
-      doc.files.forEach((file) => {
-        formData.append(`document_files_${idx}`, file);
-      });
-    });
+    documents.forEach((doc, idx) =>
+      doc.files.forEach((f) =>
+        formData.append(`document_files_${idx}`, f)
+      )
+    );
 
-    /* ---------- EXPERIENCES ---------- */
-    const cleanedExperiences = experiences.map(({ _key, ...rest }) => rest);
-    formData.append("experience", JSON.stringify(cleanedExperiences));
+    /* ----- EXPERIENCE ----- */
+    const cleaned = experiences.map(({ _key, ...rest }) => rest);
+    formData.append("experience", JSON.stringify(cleaned));
 
-    deletedExperienceIds.forEach((id) => {
-      formData.append("deleted_experience_ids", id);
-    });
+    deletedExperienceIds.forEach((id) =>
+      formData.append("deleted_experience_ids", id)
+    );
+    deletedDocumentIds.forEach((id) =>
+      formData.append("deleted_document_ids", id)
+    );
 
-    /* ---------- DELETED DOCUMENTS (🔥 MISSING FIX) ---------- */
-    deletedDocumentIds.forEach((id) => {
-      formData.append("deleted_document_ids", id);
-    });
+    const res = await onSubmit(formData);
 
-    await onSubmit(formData);
+    if (res?.success) {
+      setShowSuccessModal(true);
+    }
   };
 
-  /* ================= RENDER ================= */
+  /* ===========================================================
+     RENDER
+  ============================================================ */
   return (
-    <form className="form-container" ref={formRef} onSubmit={handleSubmit}>
-      <PersonalInfoSection
-        personalInfo={personalInfo}
-        setPersonalInfo={setPersonalInfo}
-        photoPreview={photoPreview}
-        onPhotoChange={(e) =>
-          setPhotoPreview(URL.createObjectURL(e.target.files[0]))
-        }
-      />
+    <>
+      <form className="form-container" ref={formRef} onSubmit={handleSubmit}>
+        <PersonalInfoSection
+          personalInfo={personalInfo}
+          setPersonalInfo={setPersonalInfo}
+          photoPreview={photoPreview}
+          onPhotoChange={(e) =>
+            setPhotoPreview(URL.createObjectURL(e.target.files[0]))
+          }
+          formErrors={formErrors}
+          setFormErrors={setFormErrors}
+          mode="edit"
+        />
 
-      <EmploymentSection
-        initialValues={initialValues}
-        selectedEmploymentType={selectedEmploymentType}
-        setSelectedEmploymentType={setSelectedEmploymentType}
-        selectedDepartment={selectedDepartment}
-        setSelectedDepartment={setSelectedDepartment}
-        selectedDesignation={selectedDesignation}
-        setSelectedDesignation={setSelectedDesignation}
-        selectedRoleId={selectedRoleId}
-        setSelectedRoleId={setSelectedRoleId}
-      />
+        <EmploymentSection
+          mode="edit"
+          initialValues={initialValues}
+          selectedEmploymentType={selectedEmploymentType}
+          setSelectedEmploymentType={setSelectedEmploymentType}
+          selectedDepartment={selectedDepartment}
+          setSelectedDepartment={setSelectedDepartment}
+          selectedDesignation={selectedDesignation}
+          setSelectedDesignation={setSelectedDesignation}
+          selectedRoleId={selectedRoleId}
+          setSelectedRoleId={setSelectedRoleId}
+          formErrors={formErrors}
+          setFormErrors={setFormErrors}
+        />
 
-      <PreviousExperienceSection
-        experiences={experiences}
-        onAdd={handleAddExperience}
-        onChange={handleExperienceChange}
-        onRemove={handleRemoveExperience}
-      />
+        <PreviousExperienceSection
+          experiences={experiences}
+          onAdd={handleAddExperience}
+          onChange={handleExperienceChange}
+          onRemove={handleRemoveExperience}
+        />
 
-      <DocumentsSection
-        documents={documents}
-        onAdd={handleAddDocument}
-        onChange={handleDocumentChange}
-        onFilesChange={handleDocumentFilesChange}
-        onRemoveFile={handleRemoveDocumentFile}
-        onRemoveDocument={handleRemoveDocument}
-      />
+        <DocumentsSection
+          documents={documents}
+          onAdd={handleAddDocument}
+          onChange={handleDocumentChange}
+          onFilesChange={handleDocumentFilesChange}
+          onRemoveFile={handleRemoveDocumentFile}
+          onRemoveDocument={handleRemoveDocument}
+        />
 
-      <CompensationSection initialValues={initialValues} />
-      <EmergencyContactSection initialValues={initialValues} />
+        <CompensationSection
+          initialValues={initialValues}
+          formErrors={formErrors}
+          setFormErrors={setFormErrors}
+        />
 
-      <div className="form-actions" style={{ justifyContent: "flex-end" }}>
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={!selectedRoleId}
-        >
-          <i className="fa-solid fa-save" /> Update Employee
-        </button>
-      </div>
-    </form>
+        <EmergencyContactSection
+          initialValues={initialValues}
+          formErrors={formErrors}
+          setFormErrors={setFormErrors}
+        />
+
+        <div className="form-actions" style={{ justifyContent: "flex-end" }}>
+          <button type="submit" className="btn btn-primary">
+            <i className="fa-solid fa-save" /> Update Employee
+          </button>
+        </div>
+      </form>
+
+      {/* MODALS */}
+      {showErrorModal && (
+        <ErrorModal onClose={() => setShowErrorModal(false)} />
+      )}
+
+      {showSuccessModal && (
+        <SuccessModal onClose={() => setShowSuccessModal(false)} />
+      )}
+    </>
   );
 }

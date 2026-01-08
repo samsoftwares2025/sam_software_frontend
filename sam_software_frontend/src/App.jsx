@@ -49,7 +49,7 @@ function App() {
       <BrowserRouter>
       <Routes>
         <Route path="/" element={<LoginPage />} />
-        <Route path="/admin/registration" element={<CompanyRegistrationPage />} />
+        <Route path="/company/registration" element={<CompanyRegistrationPage />} />
         <Route path="/admin/forget-password" element={<ForgotPasswordPage />} />
         <Route path="/admin/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}/> 
         <Route path="/admin/departments" element={<ProtectedRoute><DepartmentsPage /></ProtectedRoute>} />
@@ -88,7 +88,7 @@ function App() {
         <Route path="/admin/ticket-types" element={<ProtectedRoute><TicketTypesPage /></ProtectedRoute>}/>
         <Route path="/admin/update-ticket-type/:id" element={<ProtectedRoute><UpdateTicketTypePage /></ProtectedRoute>}/>
 
-      </Routes>
+      </Routes>   
     </BrowserRouter>
     </AuthProvider>
 

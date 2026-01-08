@@ -2755,3 +2755,32 @@ table.data-table tbody tr:hover {
   background: #f8d7da;
   color: #8a1c1c;
 }
+
+
+
+
+
+/* Label + error in same row */
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* inline error message */
+.inline-error {
+  color: #d93025;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* highlight input */
+.input-error {
+  border-color: #d93025 !important;
+  box-shadow: 0 0 0 1px rgba(217,48,37,0.2);
+}
+
+/* label turns red on error */
+.has-error .form-label {
+  color: #d93025;
+}

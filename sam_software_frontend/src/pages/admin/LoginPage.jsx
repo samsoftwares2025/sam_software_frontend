@@ -36,10 +36,7 @@ const LoginPage = () => {
       localStorage.setItem("token", res.token || res.access);
 
       // user id
-      localStorage.setItem(
-        "user_id",
-        res.user?.id || res.user_id || res.id
-      );
+      localStorage.setItem("user_id", res.user?.id || res.user_id || res.id);
 
       // ===============================
       // ✅ SAVE USER & COMPANY INFO (NEW)
@@ -132,9 +129,7 @@ const LoginPage = () => {
             <div className="section-title">Login Details</div>
 
             {error && (
-              <div style={{ color: "red", marginBottom: "10px" }}>
-                {error}
-              </div>
+              <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
             )}
 
             <div className="input-group">
@@ -201,6 +196,18 @@ const LoginPage = () => {
               {isSubmitting ? "Signing in..." : "Sign In"}
             </button>
           </form>
+          <div
+            className="signup-link"
+            style={{ marginTop: "15px", textAlign: "center" }}
+          >
+            <span>Don't have an account? </span>
+            <a
+              href="/company/registration"
+              style={{ color: "var(--accent)", fontWeight: "500" }}
+            >
+              Register now
+            </a>
+          </div>
         </div>
       </div>
     </div>

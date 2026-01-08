@@ -1,9 +1,9 @@
-// src/pages/admin/UpdatePolicyPage.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import "../../assets/styles/admin.css";
+
 import {
   getPolicies as apiGetPolicies,
   updatePolicy,
@@ -49,12 +49,11 @@ function UpdatePolicyPage() {
         if (!mounted) return;
 
         let list = [];
-        if (resp && Array.isArray(resp.policies)) list = resp.policies;
+
+        if (resp?.policies) list = resp.policies;
         else if (Array.isArray(resp)) list = resp;
-        else if (Array.isArray(resp.results)) list = resp.results;
-        else if (Array.isArray(resp.data)) list = resp.data;
-        else if (resp && typeof resp === "object")
-          list = resp.policies || resp.results || resp.data || [];
+        else if (Array.isArray(resp?.results)) list = resp.results;
+        else if (Array.isArray(resp?.data)) list = resp.data;
 
         const found = list.find((p) => String(p.id) === String(policyId));
 
@@ -70,7 +69,7 @@ function UpdatePolicyPage() {
         setOriginalPolicy(found);
       })
       .catch((err) => {
-        console.error("Failed to load policy for edit:", err);
+        console.error("Failed to load policy:", err);
         setError("Failed to load policy.");
       })
       .finally(() => mounted && setLoading(false));
@@ -105,19 +104,6 @@ function UpdatePolicyPage() {
       return;
     }
 
-    // nothing changed
-    if (
-      originalPolicy &&
-      title.trim() === (originalPolicy.title || "").trim() &&
-      shortDescription.trim() ===
-        (originalPolicy.short_description || "").trim() &&
-      description.trim() === (originalPolicy.description || "").trim() &&
-      !file
-    ) {
-      navigate("/admin/policies", { replace: true });
-      return;
-    }
-
     setSaving(true);
 
     try {
@@ -125,22 +111,31 @@ function UpdatePolicyPage() {
       formData.append("title", title.trim());
       formData.append("short_description", shortDescription.trim());
       formData.append("description", description.trim());
-
-      if (file) {
-        formData.append("image", file); // ✅ correct key
-      }
+      if (file) formData.append("image", file);
 
       const resp = await updatePolicy(policyId, formData);
 
+      // 🔥 HANDLE DUPLICATE TITLE OR ANY BACKEND VALIDATION
       if (resp?.success === false) {
         setError(resp.message || "Failed to update policy.");
         setSaving(false);
         return;
       }
 
+      // SUCCESS → redirect
       navigate("/admin/policies", { replace: true });
     } catch (err) {
       console.error("Update failed:", err);
+
+      const respData = err?.response?.data;
+
+      // 🔥 EXACT BACKEND MESSAGE (ex: “Policy title already exists”)
+      if (respData?.message) {
+        setError(respData.message);
+        setSaving(false);
+        return;
+      }
+
       setError("Failed to update policy.");
     } finally {
       setSaving(false);
@@ -148,7 +143,7 @@ function UpdatePolicyPage() {
   };
 
   /* ===============================
-     RENDER
+     UI
   ================================ */
   return (
     <div className="container">
@@ -170,12 +165,14 @@ function UpdatePolicyPage() {
 
         <div className="card">
           {loading ? (
-            <div>Loading policy details...</div>
-          ) : error ? (
-            <div style={{ color: "red", marginBottom: 12 }}>{error}</div>
+            <div>Loading policy...</div>
           ) : (
             <form onSubmit={handleSubmit} style={{ padding: "1.25rem" }}>
-              {/* Title */}
+              {error && (
+                <div style={{ color: "red", marginBottom: 12 }}>{error}</div>
+              )}
+
+              {/* TITLE */}
               <div className="designation-page-form-row">
                 <label>Policy Title</label>
                 <input
@@ -183,10 +180,11 @@ function UpdatePolicyPage() {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  disabled={saving}
                 />
               </div>
 
-              {/* Short Description */}
+              {/* SHORT DESCRIPTION */}
               <div className="designation-page-form-row">
                 <label>Short Description</label>
                 <textarea
@@ -194,11 +192,11 @@ function UpdatePolicyPage() {
                   rows={3}
                   value={shortDescription}
                   onChange={(e) => setShortDescription(e.target.value)}
-                  placeholder="Brief summary of the policy..."
+                  disabled={saving}
                 />
               </div>
 
-              {/* Description */}
+              {/* DESCRIPTION */}
               <div className="designation-page-form-row">
                 <label>Description</label>
                 <textarea
@@ -206,23 +204,24 @@ function UpdatePolicyPage() {
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  disabled={saving}
                 />
               </div>
 
-              {/* Existing File */}
+              {/* EXISTING FILE */}
               {existingFileUrl && !previewUrl && (
                 <div className="designation-page-form-row">
-                  <label>Current Document</label>
+                  <label>Current File</label>
+
                   {/\.(jpg|jpeg|png|gif|webp)$/i.test(existingFileUrl) ? (
                     <img
                       src={existingFileUrl}
-                      alt="Current"
+                      alt="Current Policy"
                       style={{
                         width: 120,
                         height: 120,
                         objectFit: "cover",
                         borderRadius: 6,
-                        border: "1px solid #ddd",
                       }}
                     />
                   ) : (
@@ -233,13 +232,14 @@ function UpdatePolicyPage() {
                 </div>
               )}
 
-              {/* Replace File */}
+              {/* REPLACE FILE */}
               <div className="designation-page-form-row">
-                <label>Replace Document / Image (optional)</label>
+                <label>Replace File (optional)</label>
                 <input
                   type="file"
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
                   onChange={handleFileChange}
+                  disabled={saving}
                 />
 
                 {previewUrl && (
@@ -252,22 +252,26 @@ function UpdatePolicyPage() {
                       objectFit: "cover",
                       marginTop: 10,
                       borderRadius: 6,
-                      border: "1px solid #ddd",
                     }}
                   />
                 )}
               </div>
 
-              {/* Actions */}
+              {/* ACTION BUTTONS */}
               <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? "Saving..." : "Save changes"}
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={saving}
+                >
+                  {saving ? "Saving..." : "Save Changes"}
                 </button>
 
                 <button
                   type="button"
                   className="btn btn-ghost"
                   onClick={() => navigate("/admin/policies")}
+                  disabled={saving}
                 >
                   Cancel
                 </button>

@@ -1,13 +1,24 @@
-import React from "react";
 import "../../../assets/styles/admin.css";
+import { checkUserFieldExists } from "../../../api/admin/checkUserField";
+import React, { useState, useEffect } from "react";
 
 export default function PersonalInfoSection({
   personalInfo = {},
   setPersonalInfo,
   photoPreview,
   onPhotoChange,
-  mode = "add", // "add" | "edit"
+  mode = "add",
+  employeeId,
+  formErrors, // parent errors
+  setFormErrors, // parent setter
 }) {
+  const [errors, setErrors] = useState({});
+
+  /** ⛔ FIXED: Sync local errors with parent formErrors */
+  useEffect(() => {
+    setErrors(formErrors);
+  }, [formErrors]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setPersonalInfo((prev) => ({
@@ -20,7 +31,9 @@ export default function PersonalInfoSection({
     <div className="form-section">
       <h2 className="section-title">
         <i className="fa-solid fa-user" />{" "}
-        {mode === "edit" ? "Update Personal Information" : "Add Personal Information"}
+        {mode === "edit"
+          ? "Update Personal Information"
+          : "Add Personal Information"}
       </h2>
 
       {/* PHOTO */}
@@ -53,6 +66,7 @@ export default function PersonalInfoSection({
 
       {/* BASIC GRID */}
       <div className="form-grid" style={{ marginTop: 20 }}>
+        {/* Full Name */}
         <div className="form-group">
           <label className="form-label required">Full Name</label>
           <input
@@ -65,6 +79,7 @@ export default function PersonalInfoSection({
           />
         </div>
 
+        {/* DOB */}
         <div className="form-group">
           <label className="form-label required">Date of Birth</label>
           <input
@@ -81,6 +96,7 @@ export default function PersonalInfoSection({
           />
         </div>
 
+        {/* Gender */}
         <div className="form-group">
           <label className="form-label required">Gender</label>
           <select
@@ -97,30 +113,100 @@ export default function PersonalInfoSection({
           </select>
         </div>
 
-        <div className="form-group">
-          <label className="form-label required">Personal Email</label>
+        {/* PERSONAL EMAIL */}
+        <div
+          className={`form-group ${errors.personal_email ? "has-error" : ""}`}
+        >
+          <div className="label-row">
+            <label className="form-label required">
+              Personal Email{" "}
+              {errors.personal_email && (
+                <span className="inline-error">{errors.personal_email}</span>
+              )}
+            </label>
+          </div>
+
           <input
             type="email"
-            className="form-input"
+            className={`form-input ${
+              errors.personal_email ? "input-error" : ""
+            }`}
             name="personal_email"
             value={personalInfo.personal_email || ""}
-            onChange={handleChange}
+            onChange={async (e) => {
+              handleChange(e);
+              const email = e.target.value.trim();
+
+              if (email.length > 3) {
+                try {
+                  const res = await checkUserFieldExists(
+                    "personal_email",
+                    email,
+                    employeeId
+                  );
+                  const msg = res.success ? "" : "already exists!";
+
+                  setErrors((prev) => ({ ...prev, personal_email: msg }));
+                  setFormErrors((prev) => ({ ...prev, personal_email: msg }));
+                } catch (err) {
+                  console.error("Duplicate personal email check failed:", err);
+                }
+              } else {
+                setErrors((prev) => ({ ...prev, personal_email: "" }));
+                setFormErrors((prev) => ({ ...prev, personal_email: "" }));
+              }
+            }}
             required
           />
         </div>
 
-        <div className="form-group">
-          <label className="form-label required">Phone Number</label>
+        {/* PHONE */}
+        <div className={`form-group ${errors.phone ? "has-error" : ""}`}>
+          <div className="label-row">
+            <label className="form-label required">
+              Phone Number{" "}
+              {errors.phone && (
+                <span className="inline-error">{errors.phone}</span>
+              )}
+            </label>
+          </div>
+
           <input
             type="tel"
-            className="form-input"
+            className={`form-input ${errors.phone ? "input-error" : ""}`}
             name="phone"
             value={personalInfo.phone || ""}
-            onChange={handleChange}
+            onInput={(e) => {
+              e.target.value = e.target.value.replace(/[^0-9]/g, "");
+            }}
+            onChange={async (e) => {
+              handleChange(e);
+              const phone = e.target.value.trim();
+
+              if (phone.length > 5) {
+                try {
+                  const res = await checkUserFieldExists(
+                    "phone",
+                    phone,
+                    employeeId
+                  );
+                  const msg = res.success ? "" : "already exists!";
+
+                  setErrors((prev) => ({ ...prev, phone: msg }));
+                  setFormErrors((prev) => ({ ...prev, phone: msg }));
+                } catch (err) {
+                  console.error("Phone duplicate check failed:", err);
+                }
+              } else {
+                setErrors((prev) => ({ ...prev, phone: "" }));
+                setFormErrors((prev) => ({ ...prev, phone: "" }));
+              }
+            }}
             required
           />
         </div>
 
+        {/* Qualification */}
         <div className="form-group">
           <label className="form-label required">Qualification</label>
           <input
@@ -146,7 +232,7 @@ export default function PersonalInfoSection({
         />
       </div>
 
-      {/* LOCATION DETAILS */}
+      {/* LOCATION */}
       <div className="form-grid" style={{ marginTop: 20 }}>
         <div className="form-group">
           <label className="form-label required">Country</label>

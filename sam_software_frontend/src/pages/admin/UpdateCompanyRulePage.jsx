@@ -3,10 +3,28 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import "../../assets/styles/admin.css";
+
 import {
   getCompanyRules as apiGetCompanyRules,
   updateCompanyRule,
 } from "../../api/admin/company_rules";
+
+/* ================= SUCCESS MODAL ================= */
+const SuccessModal = ({ onOk }) => (
+  <div className="modal-overlay">
+    <div className="modal-card">
+      <div className="success-icon">
+        <i className="fa-solid fa-circle-check"></i>
+      </div>
+      <h2>Company Rule Updated</h2>
+      <p>The rule has been updated successfully.</p>
+
+      <button className="btn btn-primary" onClick={onOk}>
+        OK
+      </button>
+    </div>
+  </div>
+);
 
 function UpdateCompanyRulePage() {
   const navigate = useNavigate();
@@ -19,6 +37,8 @@ function UpdateCompanyRulePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const [title, setTitle] = useState("");
   const [shortDescription, setShortDescription] = useState("");
@@ -34,26 +54,25 @@ function UpdateCompanyRulePage() {
   ================================ */
   useEffect(() => {
     if (!ruleId) {
-      setError("No rule id provided.");
+      setError("No rule ID provided.");
       setLoading(false);
       return;
     }
 
     let mounted = true;
-    setLoading(true);
     setError(null);
+    setLoading(true);
 
     apiGetCompanyRules()
       .then((resp) => {
         if (!mounted) return;
 
         let list = [];
-        if (resp && Array.isArray(resp.rules)) list = resp.rules;
+
+        if (resp?.rules) list = resp.rules;
         else if (Array.isArray(resp)) list = resp;
-        else if (Array.isArray(resp.results)) list = resp.results;
-        else if (Array.isArray(resp.data)) list = resp.data;
-        else if (resp && typeof resp === "object")
-          list = resp.rules || resp.results || resp.data || [];
+        else if (Array.isArray(resp?.data)) list = resp.data;
+        else if (Array.isArray(resp?.results)) list = resp.results;
 
         const found = list.find((r) => String(r.id) === String(ruleId));
 
@@ -69,7 +88,7 @@ function UpdateCompanyRulePage() {
         setOriginalRule(found);
       })
       .catch((err) => {
-        console.error("Failed to load company rule for edit:", err);
+        console.error("LOAD FAILED:", err);
         setError("Failed to load company rule.");
       })
       .finally(() => mounted && setLoading(false));
@@ -104,19 +123,6 @@ function UpdateCompanyRulePage() {
       return;
     }
 
-    // nothing changed
-    if (
-      originalRule &&
-      title.trim() === (originalRule.title || "").trim() &&
-      shortDescription.trim() ===
-        (originalRule.short_description || "").trim() &&
-      description.trim() === (originalRule.description || "").trim() &&
-      !file
-    ) {
-      navigate("/admin/company-rules", { replace: true });
-      return;
-    }
-
     setSaving(true);
 
     try {
@@ -124,22 +130,30 @@ function UpdateCompanyRulePage() {
       formData.append("title", title.trim());
       formData.append("short_description", shortDescription.trim());
       formData.append("description", description.trim());
-
-      if (file) {
-        formData.append("image", file); // ✅ matches backend
-      }
+      if (file) formData.append("image", file);
 
       const resp = await updateCompanyRule(ruleId, formData);
 
+      // 🔥 EXACT BACKEND DUPLICATION ERROR SUPPORT
       if (resp?.success === false) {
         setError(resp.message || "Failed to update company rule.");
         setSaving(false);
         return;
       }
 
-      navigate("/admin/company-rules", { replace: true });
+      setShowSuccessModal(true);
     } catch (err) {
-      console.error("Update failed:", err);
+      console.error("UPDATE FAILED:", err);
+
+      const respData = err?.response?.data;
+
+      // 🔥 show backend validation / duplication message
+      if (respData?.message) {
+        setError(respData.message);
+        setSaving(false);
+        return;
+      }
+
       setError("Failed to update company rule.");
     } finally {
       setSaving(false);
@@ -147,143 +161,149 @@ function UpdateCompanyRulePage() {
   };
 
   /* ===============================
-     RENDER
+     UI
   ================================ */
   return (
-    <div className="container">
-      <Sidebar
-        isMobileOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        openSection={openSection}
-        setOpenSection={() => {}}
-      />
+    <>
+      <div className="container">
+        <Sidebar
+          isMobileOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          openSection={openSection}
+          setOpenSection={() => {}}
+        />
 
-      <main className="main">
-        <Header onMenuClick={() => setIsSidebarOpen((p) => !p)} />
-        <div className="the_line" />
+        <main className="main">
+          <Header onMenuClick={() => setIsSidebarOpen((p) => !p)} />
 
-        <div className="page-title">
-          <h3>Update Company Rule</h3>
-          <p className="subtitle">Update company rule details.</p>
-        </div>
+          <div className="the_line" />
 
-        <div className="card">
-          {loading ? (
-            <div>Loading company rule details...</div>
-          ) : error ? (
-            <div style={{ color: "red", marginBottom: 12 }}>{error}</div>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ padding: "1.25rem" }}>
-              {/* Title */}
-              <div className="designation-page-form-row">
-                <label>Rule Title</label>
-                <input
-                  className="designation-page-form-input"
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
+          <div className="page-title">
+            <h3>Update Company Rule</h3>
+            <p className="subtitle">Modify the existing rule.</p>
+          </div>
 
-              {/* Short Description */}
-              <div className="designation-page-form-row">
-                <label>Short Description</label>
-                <textarea
-                  className="designation-page-form-input"
-                  rows={3}
-                  value={shortDescription}
-                  onChange={(e) => setShortDescription(e.target.value)}
-                  placeholder="Brief summary of the rule..."
-                />
-              </div>
+          <div className="card">
+            {loading ? (
+              <div style={{ padding: "1.25rem" }}>Loading rule...</div>
+            ) : (
+              <form onSubmit={handleSubmit} style={{ padding: "1.25rem" }}>
+                {error && (
+                  <div style={{ color: "red", marginBottom: 10 }}>{error}</div>
+                )}
 
-              {/* Description */}
-              <div className="designation-page-form-row">
-                <label>Description</label>
-                <textarea
-                  className="designation-page-form-input"
-                  rows={4}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-
-              {/* Existing File */}
-              {existingFileUrl && !previewUrl && (
+                {/* Title */}
                 <div className="designation-page-form-row">
-                  <label>Current Document</label>
-                  {/\.(jpg|jpeg|png|gif|webp)$/i.test(existingFileUrl) ? (
+                  <label>Rule Title</label>
+                  <input
+                    className="designation-page-form-input"
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    disabled={saving}
+                  />
+                </div>
+
+                {/* Short Description */}
+                <div className="designation-page-form-row">
+                  <label>Short Description</label>
+                  <textarea
+                    className="designation-page-form-input"
+                    rows={3}
+                    value={shortDescription}
+                    onChange={(e) => setShortDescription(e.target.value)}
+                    disabled={saving}
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="designation-page-form-row">
+                  <label>Description</label>
+                  <textarea
+                    className="designation-page-form-input"
+                    rows={4}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    disabled={saving}
+                  />
+                </div>
+
+                {/* Current File */}
+                {existingFileUrl && !previewUrl && (
+                  <div className="designation-page-form-row">
+                    <label>Current File</label>
+
+                    {/\.(jpg|jpeg|png|gif|webp)$/i.test(existingFileUrl) ? (
+                      <img
+                        src={existingFileUrl}
+                        alt="Current"
+                        style={{
+                          width: 120,
+                          height: 120,
+                          objectFit: "cover",
+                          borderRadius: 6,
+                          border: "1px solid #ccc",
+                        }}
+                      />
+                    ) : (
+                      <a href={existingFileUrl} target="_blank" rel="noreferrer">
+                        View current file
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {/* New File */}
+                <div className="designation-page-form-row">
+                  <label>Replace File (optional)</label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                    onChange={handleFileChange}
+                    disabled={saving}
+                  />
+
+                  {previewUrl && (
                     <img
-                      src={existingFileUrl}
-                      alt="Current"
+                      src={previewUrl}
+                      alt="Preview"
                       style={{
                         width: 120,
                         height: 120,
                         objectFit: "cover",
+                        marginTop: 10,
                         borderRadius: 6,
                         border: "1px solid #ddd",
                       }}
                     />
-                  ) : (
-                    <a
-                      href={existingFileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      View current document
-                    </a>
                   )}
                 </div>
-              )}
 
-              {/* Replace File */}
-              <div className="designation-page-form-row">
-                <label>Replace Document / Image (optional)</label>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
-                  onChange={handleFileChange}
-                />
+                <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+                  <button type="submit" className="btn btn-primary" disabled={saving}>
+                    {saving ? "Saving..." : "Save Changes"}
+                  </button>
 
-                {previewUrl && (
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    style={{
-                      width: 120,
-                      height: 120,
-                      objectFit: "cover",
-                      marginTop: 10,
-                      borderRadius: 6,
-                      border: "1px solid #ddd",
-                    }}
-                  />
-                )}
-              </div>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => navigate("/admin/company-rules")}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </main>
+      </div>
 
-              {/* Actions */}
-              <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={saving}
-                >
-                  {saving ? "Saving..." : "Save changes"}
-                </button>
-
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={() => navigate("/admin/company-rules")}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-      </main>
-    </div>
+      {/* SUCCESS MODAL */}
+      {showSuccessModal && (
+        <SuccessModal onOk={() => navigate("/admin/company-rules")} />
+      )}
+    </>
   );
 }
 

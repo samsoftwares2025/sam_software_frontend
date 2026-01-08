@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import "../../../assets/styles/admin.css";
 import Select from "react-select";
-import { getUserRoles, createRole } from "../../../api/admin/roles";
 
+import { checkUserFieldExists } from "../../../api/admin/checkUserField";
+
+import { getUserRoles, createRole } from "../../../api/admin/roles";
 import {
   getDepartments,
   createDepartment,
@@ -19,6 +21,7 @@ import { getEmployeesList } from "../../../api/admin/employees";
 
 export default function EmploymentSection({
   initialValues = {},
+  mode = "add",
   selectedEmploymentType,
   setSelectedEmploymentType,
   selectedDepartment,
@@ -27,22 +30,32 @@ export default function EmploymentSection({
   setSelectedDesignation,
   selectedRoleId,
   setSelectedRoleId,
+  setFormErrors, // ✅ ADDED HERE
 }) {
   const [status, setStatus] = useState("active");
 
+  const [errors, setErrors] = useState({
+    employee_id: "",
+    official_email: "",
+  });
 
   /* ================= EMPLOYMENT TYPE ================= */
   const [employmentTypes, setEmploymentTypes] = useState([]);
   const [isAddingEmploymentType, setIsAddingEmploymentType] = useState(false);
   const [newEmploymentTypeName, setNewEmploymentTypeName] = useState("");
+
   const [employees, setEmployees] = useState([]);
   const [selectedParentId, setSelectedParentId] = useState("");
+
   const employeeOptions = employees.map((emp) => ({
     value: emp.id,
     label: `${emp.name} (${emp.employee_id})`,
   }));
+
   /* ================= ROLES ================= */
   const [roles, setRoles] = useState([]);
+  const [isAddingRole, setIsAddingRole] = useState(false);
+  const [newRoleName, setNewRoleName] = useState("");
 
   useEffect(() => {
     if (initialValues?.parent_id && employees.length > 0) {
@@ -78,6 +91,7 @@ export default function EmploymentSection({
     }
     setSelectedEmploymentType(val);
   };
+
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -90,6 +104,7 @@ export default function EmploymentSection({
 
     fetchEmployees();
   }, []);
+
   const handleConfirmAddEmploymentType = async () => {
     if (!newEmploymentTypeName.trim()) return;
     const res = await createEmployementType(newEmploymentTypeName.trim());
@@ -98,8 +113,7 @@ export default function EmploymentSection({
     setIsAddingEmploymentType(false);
     setNewEmploymentTypeName("");
   };
-  const [isAddingRole, setIsAddingRole] = useState(false);
-  const [newRoleName, setNewRoleName] = useState("");
+
   const handleRoleChange = (e) => {
     const val = e.target.value;
 
@@ -110,13 +124,13 @@ export default function EmploymentSection({
 
     setSelectedRoleId(val);
   };
+
   const handleConfirmAddRole = async () => {
     if (!newRoleName.trim()) return;
 
     try {
       const res = await createRole(newRoleName.trim());
 
-      // refresh roles
       const refreshed = await getUserRoles();
       if (refreshed?.success) {
         setRoles(refreshed.user_roles || []);
@@ -215,6 +229,24 @@ export default function EmploymentSection({
     fetchRoles();
   }, []);
 
+  /* ====================================================================
+     🔥 DUPLICATION CHECKS — now forwarded to parent via setFormErrors()
+     ==================================================================== */
+
+  const updateErrorState = (field, value) => {
+    // internal component error
+    setErrors((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+
+    // send error to parent (modal)
+    setFormErrors((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   /* ================= RENDER ================= */
   return (
     <div className="form-section">
@@ -222,46 +254,94 @@ export default function EmploymentSection({
         <i className="fa-solid fa-briefcase" /> Employment Details
       </h2>
 
-      {/* 🔥 HIDDEN INPUTS (CRITICAL FOR FORM DATA) */}
-      <input type="hidden" name="is_active" value={status === "active" ? "1" : "0"}/>
-
-      <input
-        type="hidden"
-        name="employment_type_id"
-        value={selectedEmploymentType || ""}
-      />
-      <input
-        type="hidden"
-        name="department_id"
-        value={selectedDepartment || ""}
-      />
-      <input
-        type="hidden"
-        name="designation_id"
-        value={selectedDesignation || ""}
-      />
-      <input type="hidden" name="parent_id" value={selectedParentId || ""} />
-
       <div className="form-grid">
-        {/* Employee ID */}
-        <div className="form-group">
-          <label className="form-label required">Employee ID</label>
+        {/* =======================================
+            🔥 EMPLOYEE ID (DUPLICATION CHECK)
+        ======================================== */}
+        <div className={`form-group ${errors.employee_id ? "has-error" : ""}`}>
+          <div className="label-row">
+            <label className="form-label required">
+              Employee ID{" "}
+              {errors.employee_id && (
+                <span className="inline-error">{errors.employee_id}</span>
+              )}
+            </label>
+          </div>
+
           <input
-            className="form-input"
+            className={`form-input ${errors.employee_id ? "input-error" : ""}`}
             name="employee_id"
             defaultValue={initialValues.employee_id || ""}
+            onChange={async (e) => {
+              const empId = e.target.value.trim();
+
+              if (empId.length > 2) {
+                try {
+                  const res = await checkUserFieldExists(
+                    "employee_id",
+                    empId,
+                    initialValues?.id || ""
+                  );
+
+                  updateErrorState(
+                    "employee_id",
+                    res.success ? "" : "already exists!"
+                  );
+                } catch (err) {
+                  console.error("Employee ID duplicate check failed:", err);
+                }
+              } else {
+                updateErrorState("employee_id", "");
+              }
+            }}
             required
           />
         </div>
 
-        {/* Company Email */}
-        <div className="form-group">
-          <label className="form-label required">Company Email</label>
+        {/* =======================================
+            🔥 COMPANY EMAIL (DUPLICATION CHECK)
+        ======================================== */}
+        <div
+          className={`form-group ${errors.official_email ? "has-error" : ""}`}
+        >
+          <div className="label-row">
+            <label className="form-label required">
+              Company Email{" "}
+              {errors.official_email && (
+                <span className="inline-error">{errors.official_email}</span>
+              )}
+            </label>
+          </div>
+
           <input
             type="email"
-            className="form-input"
+            className={`form-input ${
+              errors.official_email ? "input-error" : ""
+            }`}
             name="official_email"
             defaultValue={initialValues.official_email || ""}
+            onChange={async (e) => {
+              const email = e.target.value.trim();
+
+              if (email.length > 3) {
+                try {
+                  const res = await checkUserFieldExists(
+                    "official_email",
+                    email,
+                    initialValues?.id || ""
+                  );
+
+                  updateErrorState(
+                    "official_email",
+                    res.success ? "" : "already exists!"
+                  );
+                } catch (err) {
+                  console.error("Official email duplicate check failed:", err);
+                }
+              } else {
+                updateErrorState("official_email", "");
+              }
+            }}
             required
           />
         </div>
@@ -414,11 +494,13 @@ export default function EmploymentSection({
                   ? "Select Designation"
                   : "Select Department first"}
               </option>
+
               {(designationsByDept[selectedDepartment] || []).map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
                 </option>
               ))}
+
               {selectedDepartment && (
                 <option value="__add_desig__">+ Add Designation</option>
               )}
@@ -461,6 +543,8 @@ export default function EmploymentSection({
             </div>
           )}
         </div>
+
+        {/* Reporting Manager */}
         <div className="form-group">
           <label className="form-label">Reporting Manager</label>
 
@@ -476,6 +560,7 @@ export default function EmploymentSection({
             }
           />
         </div>
+
         {/* Role */}
         <div className="form-group">
           <label className="form-label required">Role</label>
@@ -489,13 +574,11 @@ export default function EmploymentSection({
               style={{ flex: 1 }}
             >
               <option value="">Select Role</option>
-
               {roles.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.role}
                 </option>
               ))}
-
               <option value="__add_role__">+ Add Role</option>
             </select>
 
@@ -540,20 +623,24 @@ export default function EmploymentSection({
             </div>
           )}
         </div>
-        <div className="form-group">
-          <label className="form-label required">Status</label>
 
-          <select
-            className="form-select"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            required
-          >
-            <option value="">Select Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
+        {/* Status */}
+        {mode === "edit" && (
+          <div className="form-group">
+            <label className="form-label required">Status</label>
+
+            <select
+              className="form-select"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              required
+            >
+              <option value="">Select Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        )}
       </div>
     </div>
   );
