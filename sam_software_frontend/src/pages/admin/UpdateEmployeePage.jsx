@@ -13,6 +13,25 @@ import {
 } from "../../api/admin/employees";
 
 function UpdateEmployeePage() {
+  /* ======================================================
+     MODAL: UPDATE FAILURE
+  ====================================================== */
+  const [showFailureModal, setShowFailureModal] = useState(false);
+
+  const FailureModal = ({ onClose }) => (
+    <div className="modal-overlay">
+      <div className="modal-card error">
+        
+        <h2>❌ Update Failed</h2>
+        <p>Failed to update employee. Please try again.</p>
+
+        <button className="btn btn-primary" onClick={onClose}>
+          OK
+        </button>
+      </div>
+    </div>
+  );
+
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -23,9 +42,9 @@ function UpdateEmployeePage() {
   const [error, setError] = useState(null);
   const [initialValues, setInitialValues] = useState(null);
 
-  /* ============================
+  /* ======================================================
      FETCH EMPLOYEE DATA
-  ============================ */
+  ====================================================== */
   useEffect(() => {
     if (!id) {
       setError("Invalid employee id");
@@ -41,11 +60,8 @@ function UpdateEmployeePage() {
         const documents = resp?.documents || [];
         const experiences = resp?.experiences || [];
 
-        if (!emp) {
-          throw new Error("Employee not found");
-        }
+        if (!emp) throw new Error("Employee not found");
 
-        // ✅ PASS EVERYTHING THE FORM NEEDS
         setInitialValues({
           id: emp.id,
 
@@ -61,12 +77,17 @@ function UpdateEmployeePage() {
           state: emp.state ?? "",
           city: emp.city ?? "",
           postal_code: emp.postal_code ?? "",
-          image: emp.image ?? null, // 👈 profile photo
+          image: emp.image ?? null,
 
           /* ---------- Employment ---------- */
           employee_id: emp.employee_id ?? "",
           official_email: emp.official_email ?? "",
-          joining_date: emp.joining_date ? emp.joining_date.split("T")[0]: "",
+          joining_date: emp.joining_date
+            ? emp.joining_date.split("T")[0]
+            : "",
+          last_working_date: emp.last_working_date
+            ? emp.last_working_date.split("T")[0]
+            : "",
 
           employment_type_id: String(emp.employment_type_id ?? ""),
           department_id: String(emp.department_id ?? ""),
@@ -75,7 +96,7 @@ function UpdateEmployeePage() {
           user_role_id: emp.user_role_id ? String(emp.user_role_id) : "",
 
           work_location: emp.work_location ?? "",
-          is_active: emp.is_active, 
+          is_active: emp.is_active,
 
           /* ---------- Compensation ---------- */
           annual_ctc: emp.annual_ctc ?? "",
@@ -86,18 +107,15 @@ function UpdateEmployeePage() {
           ifsc_code: emp.ifsc_code ?? "",
 
           /* ---------- Emergency ---------- */
-          emergency_contact_name:
-            emp.emergency_contact_name ?? "",
+          emergency_contact_name: emp.emergency_contact_name ?? "",
           emergency_contact_relationship:
             emp.emergency_contact_relationship ?? "",
-          emergency_contact_number:
-            emp.emergency_contact_number ?? "",
-          emergency_contact_email:
-            emp.emergency_contact_email ?? "",
+          emergency_contact_number: emp.emergency_contact_number ?? "",
+          emergency_contact_email: emp.emergency_contact_email ?? "",
 
-          /* ---------- Documents & Experience ---------- */
-          documents,       // ✅ FIXED
-          experiences,     // optional, future-proof
+          /* ---------- Additional ---------- */
+          documents,
+          experiences,
         });
       } catch (err) {
         console.error("❌ UpdateEmployeePage error:", err);
@@ -110,37 +128,42 @@ function UpdateEmployeePage() {
     fetchEmployee();
   }, [id]);
 
-  /* ============================
-     SUBMIT HANDLER
-  ============================ */
+  /* ======================================================
+     SUBMIT HANDLER (WITH MODAL ON FAILURE)
+  ====================================================== */
   const handleFormSubmit = async (formData) => {
     try {
       const userId = localStorage.getItem("user_id");
 
       if (!userId) {
-        alert("Session expired. Please login again.");
-        navigate("/login");
+        setShowFailureModal(true);
         return;
       }
 
-      // REQUIRED BY BACKEND
       formData.append("id", id);
       formData.append("user_id", userId);
 
-      await updateEmployee(formData);
+      const response = await updateEmployee(formData);
+
+      // backend error response handling
+      if (!response?.success) {
+        setShowFailureModal(true);
+        return;
+      }
 
       navigate("/admin/employee-master");
     } catch (err) {
       console.error("❌ Failed to update employee:", err);
-      alert("Failed to update employee. Please try again.");
+      setShowFailureModal(true); // SHOW MODAL INSTEAD OF ALERT
     }
   };
 
-  /* ============================
-     RENDER
-  ============================ */
+  /* ======================================================
+     RENDER PAGE
+  ====================================================== */
   return (
     <div className="container">
+      {/* Sidebar */}
       <Sidebar
         isMobileOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -159,15 +182,11 @@ function UpdateEmployeePage() {
         </div>
 
         {loading && (
-          <div style={{ padding: "2rem" }}>
-            Loading employee data...
-          </div>
+          <div style={{ padding: "2rem" }}>Loading employee data...</div>
         )}
 
         {!loading && error && (
-          <div style={{ padding: "2rem", color: "orange" }}>
-            {error}
-          </div>
+          <div style={{ padding: "2rem", color: "orange" }}>{error}</div>
         )}
 
         {!loading && !error && initialValues && (
@@ -177,6 +196,11 @@ function UpdateEmployeePage() {
           />
         )}
       </main>
+
+      {/* FAILURE MODAL */}
+      {showFailureModal && (
+        <FailureModal onClose={() => setShowFailureModal(false)} />
+      )}
     </div>
   );
 }

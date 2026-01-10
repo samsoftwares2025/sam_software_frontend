@@ -226,15 +226,15 @@ function EmploymentHistoryPage() {
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>#</th>
-                      <th>Employee ID</th>
-                      <th>Employee</th>
-                      <th>Employment Type</th>
-                      <th>Joining Date</th>
-                      <th>Confirmation Date</th>
-                      <th>Last Working Date</th>
-                      <th>Reporting Manager</th>
-                      <th>Action</th>
+                     <th style={{ width: "5%" }}>Order No</th>
+                      <th style={{ width: "5%" }}>Employee ID</th>
+                      <th style={{ width: "15%" }}>Name</th>
+                      <th style={{ width: "10%" }}>Employment Type</th>
+                      <th style={{ width: "10%" }}>Joining Date</th>
+                      <th style={{ width: "10%" }}>Confirmation Date</th>
+                      <th style={{ width: "10%" }}>Last Working Date</th>
+                      <th style={{ width: "15%" }}>Reporting Manager</th>
+                      <th style={{ width: "10%" }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>

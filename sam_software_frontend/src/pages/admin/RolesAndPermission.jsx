@@ -13,8 +13,12 @@ const RolesPermissions = () => {
 
   /* ================= DATA ================= */
   const [roles, setRoles] = useState([]);
+  const [filteredRoles, setFilteredRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  /* ================= SEARCH ================= */
+  const [searchTerm, setSearchTerm] = useState("");
 
   /* ================= DELETE MODAL ================= */
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -29,7 +33,9 @@ const RolesPermissions = () => {
     try {
       const res = await getUserRoles();
       if (res?.success) {
-        setRoles(res.user_roles || []);
+        const list = res.user_roles || [];
+        setRoles(list);
+        setFilteredRoles(list);
       } else {
         setError("Failed to load roles");
       }
@@ -44,6 +50,20 @@ const RolesPermissions = () => {
   useEffect(() => {
     fetchRoles();
   }, []);
+
+  /* ================= SEARCH HANDLER ================= */
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredRoles(roles);
+      return;
+    }
+
+    const term = searchTerm.toLowerCase();
+
+    setFilteredRoles(
+      roles.filter((role) => role.role.toLowerCase().includes(term))
+    );
+  }, [searchTerm, roles]);
 
   /* ================= DELETE HANDLERS ================= */
   const openDeleteModal = (role) => {
@@ -66,15 +86,13 @@ const RolesPermissions = () => {
     try {
       await deleteUserRole(roleToDelete.id);
 
-      // remove from UI instantly
       setRoles((prev) => prev.filter((r) => r.id !== roleToDelete.id));
+      setFilteredRoles((prev) => prev.filter((r) => r.id !== roleToDelete.id));
 
       closeDeleteModal();
     } catch (err) {
       console.error("DELETE ROLE FAILED:", err);
-      setDeleteError(
-        err?.response?.data?.message || "Failed to delete role"
-      );
+      setDeleteError(err?.response?.data?.message || "Failed to delete role");
       setDeleting(false);
     }
   };
@@ -97,11 +115,35 @@ const RolesPermissions = () => {
             <h1>Roles and Permissions</h1>
             <p className="subtitle">Manage user roles dynamically.</p>
           </div>
+        </div>
+        <div className="filters-container">
+          <div className="filters-left">
+            <div className="search-input">
+              <i className="fa-solid fa-magnifying-glass" />
+              <input
+                type="text"
+                placeholder="Search by Role..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
 
-          <div className="header-actions">
+            {loading && <div style={{ marginLeft: 12 }}>Loading...</div>}
+            {error && (
+              <div style={{ marginLeft: 12, color: "orange" }}>{error}</div>
+            )}
+          </div>
+
+          <div className="filters-right">
+            {/* REFRESH BUTTON */}
+            <button className="btn" onClick={fetchRoles}>
+              <i className="fa-solid fa-rotate" /> Refresh
+            </button>
+
+            {/* CREATE NEW ROLE */}
             <Link to="/admin/add-role">
               <button className="btn btn-primary">
-                + Create New Role
+                <i className="fa-solid fa-plus" /> Create New Role
               </button>
             </Link>
           </div>
@@ -109,14 +151,10 @@ const RolesPermissions = () => {
 
         {/* ================= TABLE ================= */}
         <section className="table-container">
-          {loading && (
-            <div style={{ padding: "1.5rem" }}>Loading roles...</div>
-          )}
+          {loading && <div style={{ padding: "1.5rem" }}>Loading roles...</div>}
 
           {!loading && error && (
-            <div style={{ padding: "1.5rem", color: "red" }}>
-              {error}
-            </div>
+            <div style={{ padding: "1.5rem", color: "red" }}>{error}</div>
           )}
 
           {!loading && !error && (
@@ -124,24 +162,26 @@ const RolesPermissions = () => {
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th style={{ width: "5%" }}>Order No</th>
                     <th>Role Name</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {roles.length === 0 && (
+                  {filteredRoles.length === 0 && (
                     <tr>
                       <td colSpan="4" className="empty-state">
-                        No roles found
+                        No roles match your search
                       </td>
                     </tr>
                   )}
 
-                  {roles.map((role) => (
+                  {filteredRoles.map((role, index) => (
                     <tr key={role.id}>
+                      <td style={{ textAlign: "center" }}>{index + 1}</td>
                       <td className="emp-name">{role.role}</td>
-                     
+
                       <td>
                         <div className="table-actions">
                           {/* Assign */}
@@ -197,7 +237,9 @@ const RolesPermissions = () => {
               </div>
             )}
 
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <div
+              style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
+            >
               <button
                 className="btn"
                 onClick={closeDeleteModal}

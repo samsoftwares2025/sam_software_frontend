@@ -26,7 +26,7 @@ const SuccessModal = ({ onOk }) => (
 
 function AddTicketTypePage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [openSection] = useState("tickets");
+  const [openSection,setOpenSection] = useState("tickets");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -89,7 +89,7 @@ function AddTicketTypePage() {
           isMobileOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           openSection={openSection}
-          setOpenSection={() => {}}
+          setOpenSection={setOpenSection}
         />
 
         <main className="main">

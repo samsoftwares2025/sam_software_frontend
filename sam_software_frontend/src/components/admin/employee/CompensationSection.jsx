@@ -53,22 +53,24 @@ export default function CompensationSection({
 
         {/* Variable Pay */}
         <div className="form-group">
-          <label className="form-label">Variable Pay</label>
+          <label className="form-label required">Variable Pay</label>
           <input
             type="number"
             className="form-input"
             name="variable_pay"
+            required
             defaultValue={initialValues.variable_pay || ""}
           />
         </div>
 
         {/* Bank Name */}
-        <div className="form-group">
+        <div className="form-group required">
           <label className="form-label">Bank Name</label>
           <input
             type="text"
             className="form-input"
             name="bank_name"
+            required
             defaultValue={initialValues.bank_name || ""}
           />
         </div>

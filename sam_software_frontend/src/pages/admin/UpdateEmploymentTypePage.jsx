@@ -18,7 +18,7 @@ function UpdateEmployementTypePage() {
   // Layout
   // ===============================
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [openSection] = useState("organization");
+  const [openSection,setOpenSection] = useState("organization");
 
   // ===============================
   // Form State
@@ -126,7 +126,7 @@ function UpdateEmployementTypePage() {
         isMobileOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         openSection={openSection}
-        setOpenSection={() => {}}
+        setOpenSection={setOpenSection}
       />
 
       <main className="main">

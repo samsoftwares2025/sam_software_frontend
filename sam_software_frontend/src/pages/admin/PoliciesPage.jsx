@@ -200,14 +200,14 @@ function PoliciesPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th style={{ width: "80px" }}>Order No</th>
-                  <th>Title</th>
-                  <th>Short Description</th>
-                  <th>Description</th>
-                  <th>File</th>
-                  <th>Created</th>
-                  <th>Updated</th>
-                  <th>Actions</th>
+                  <th style={{ width: "5%" }}>Order No</th>
+                  <th style={{ width: "15%" }}>Title</th>
+                  <th style={{ width: "15%" }}>Short Description</th>
+                  <th style={{ width: "30%" }}>Description</th>
+                  <th style={{ width: "5%" }}>File</th>
+                  <th style={{ width: "10%" }}>Created</th>
+                  <th style={{ width: "10%" }}>Updated</th>
+                  <th style={{ width: "10%" }}>Actions</th>
                 </tr>
               </thead>
 
@@ -220,9 +220,9 @@ function PoliciesPage() {
                   return (
                     <tr key={row.id}>
                       <td style={{ textAlign: "center" }}>{index + 1}</td>
-                      <td>{row.title}</td>
-                      <td>{row.short_description || "-"}</td>
-                      <td>{row.description || "-"}</td>
+                      <td className="wrap">{row.title}</td>
+                      <td className="wrap">{row.short_description || "-"}</td>
+                      <td className="wrap">{row.description || "-"}</td>
 
                       <td>
                         {file ? (

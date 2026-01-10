@@ -1,6 +1,12 @@
 import "../../../assets/styles/admin.css";
 import { checkUserFieldExists } from "../../../api/admin/checkUserField";
+import {
+  getAllCountries,
+  getStatesByCountry,
+  getCitiesByState,
+} from "../../../api/admin/locationApi";
 import React, { useState, useEffect } from "react";
+import Select from "react-select";
 
 export default function PersonalInfoSection({
   personalInfo = {},
@@ -9,23 +15,112 @@ export default function PersonalInfoSection({
   onPhotoChange,
   mode = "add",
   employeeId,
-  formErrors, // parent errors
-  setFormErrors, // parent setter
+  formErrors,
+  setFormErrors,
 }) {
   const [errors, setErrors] = useState({});
 
-  /** ⛔ FIXED: Sync local errors with parent formErrors */
+  /** Sync errors */
   useEffect(() => {
     setErrors(formErrors);
   }, [formErrors]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setPersonalInfo((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setPersonalInfo((prev) => ({ ...prev, [name]: value }));
   };
+
+  /** LOCATION STATES */
+  const [countryList, setCountryList] = useState([]);
+  const [stateList, setStateList] = useState([]);
+  const [cityList, setCityList] = useState([]);
+
+  const [manualCountry, setManualCountry] = useState(false);
+  const [manualState, setManualState] = useState(false);
+  const [manualCity, setManualCity] = useState(false);
+
+  /** Load Countries */
+  useEffect(() => {
+    getAllCountries().then((res) => {
+      const list = res.map((c) => ({
+        label: c.country_name,
+        value: c.country_name,
+      }));
+      list.push({ label: "Enter manually", value: "__manual" });
+      setCountryList(list);
+    });
+  }, []);
+
+  /** COUNTRY — Detect manual */
+  useEffect(() => {
+    if (mode === "edit" && personalInfo.country) {
+      const exists = countryList.some((c) => c.value === personalInfo.country);
+
+      if (!exists) {
+        setManualCountry(true);
+      }
+    }
+  }, [mode, personalInfo.country, countryList]);
+
+  /** STATE — Load only when NOT manual */
+  useEffect(() => {
+    if (!personalInfo.country || manualCountry) return;
+
+    getStatesByCountry(personalInfo.country).then((res) => {
+      const list = res.map((s) => ({
+        label: s.state_name,
+        value: s.state_name,
+      }));
+      list.push({ label: "Enter manually", value: "__manual" });
+      setStateList(list);
+    });
+  }, [personalInfo.country, manualCountry]);
+
+  /** STATE — Detect manual */
+  useEffect(() => {
+    if (mode === "edit" && personalInfo.state) {
+      if (manualCountry) {
+        setManualState(true);
+        return;
+      }
+
+      const exists = stateList.some((s) => s.value === personalInfo.state);
+
+      if (!exists) {
+        setManualState(true);
+      }
+    }
+  }, [mode, personalInfo.state, manualCountry, stateList]);
+
+  /** CITY — Load only when NOT manual */
+  useEffect(() => {
+    if (!personalInfo.state || manualState) return;
+
+    getCitiesByState(personalInfo.country, personalInfo.state).then((res) => {
+      const list = res.map((c) => ({
+        label: c,
+        value: c,
+      }));
+      list.push({ label: "Enter manually", value: "__manual" });
+      setCityList(list);
+    });
+  }, [personalInfo.state, manualState]);
+
+  /** CITY — Detect manual */
+  useEffect(() => {
+    if (mode === "edit" && personalInfo.city) {
+      if (manualState) {
+        setManualCity(true);
+        return;
+      }
+
+      const exists = cityList.some((c) => c.value === personalInfo.city);
+
+      if (!exists) {
+        setManualCity(true);
+      }
+    }
+  }, [mode, personalInfo.city, manualState, cityList]);
 
   return (
     <div className="form-section">
@@ -66,7 +161,6 @@ export default function PersonalInfoSection({
 
       {/* BASIC GRID */}
       <div className="form-grid" style={{ marginTop: 20 }}>
-        {/* Full Name */}
         <div className="form-group">
           <label className="form-label required">Full Name</label>
           <input
@@ -79,7 +173,6 @@ export default function PersonalInfoSection({
           />
         </div>
 
-        {/* DOB */}
         <div className="form-group">
           <label className="form-label required">Date of Birth</label>
           <input
@@ -96,7 +189,6 @@ export default function PersonalInfoSection({
           />
         </div>
 
-        {/* Gender */}
         <div className="form-group">
           <label className="form-label required">Gender</label>
           <select
@@ -138,22 +230,14 @@ export default function PersonalInfoSection({
               const email = e.target.value.trim();
 
               if (email.length > 3) {
-                try {
-                  const res = await checkUserFieldExists(
-                    "personal_email",
-                    email,
-                    employeeId
-                  );
-                  const msg = res.success ? "" : "already exists!";
-
-                  setErrors((prev) => ({ ...prev, personal_email: msg }));
-                  setFormErrors((prev) => ({ ...prev, personal_email: msg }));
-                } catch (err) {
-                  console.error("Duplicate personal email check failed:", err);
-                }
-              } else {
-                setErrors((prev) => ({ ...prev, personal_email: "" }));
-                setFormErrors((prev) => ({ ...prev, personal_email: "" }));
+                const res = await checkUserFieldExists(
+                  "personal_email",
+                  email,
+                  employeeId
+                );
+                const msg = res.success ? "" : "already exists!";
+                setErrors((p) => ({ ...p, personal_email: msg }));
+                setFormErrors((p) => ({ ...p, personal_email: msg }));
               }
             }}
             required
@@ -184,29 +268,21 @@ export default function PersonalInfoSection({
               const phone = e.target.value.trim();
 
               if (phone.length > 5) {
-                try {
-                  const res = await checkUserFieldExists(
-                    "phone",
-                    phone,
-                    employeeId
-                  );
-                  const msg = res.success ? "" : "already exists!";
-
-                  setErrors((prev) => ({ ...prev, phone: msg }));
-                  setFormErrors((prev) => ({ ...prev, phone: msg }));
-                } catch (err) {
-                  console.error("Phone duplicate check failed:", err);
-                }
-              } else {
-                setErrors((prev) => ({ ...prev, phone: "" }));
-                setFormErrors((prev) => ({ ...prev, phone: "" }));
+                const res = await checkUserFieldExists(
+                  "phone",
+                  phone,
+                  employeeId
+                );
+                const msg = res.success ? "" : "already exists!";
+                setErrors((p) => ({ ...p, phone: msg }));
+                setFormErrors((p) => ({ ...p, phone: msg }));
               }
             }}
             required
           />
         </div>
 
-        {/* Qualification */}
+        {/* QUALIFICATION */}
         <div className="form-group">
           <label className="form-label required">Qualification</label>
           <input
@@ -232,44 +308,178 @@ export default function PersonalInfoSection({
         />
       </div>
 
-      {/* LOCATION */}
+      {/* LOCATION SECTION */}
       <div className="form-grid" style={{ marginTop: 20 }}>
+        {/* COUNTRY */}
         <div className="form-group">
           <label className="form-label required">Country</label>
+
+          {!manualCountry ? (
+            <Select
+              options={[
+                ...countryList,
+                { label: "➕ Enter manually", value: "__manual" },
+              ]}
+              placeholder="Search country..."
+              value={
+                countryList.find((c) => c.value === personalInfo.country) ||
+                null
+              }
+              onChange={(opt) => {
+                if (opt.value === "__manual") {
+                  setManualCountry(true);
+                  setPersonalInfo((p) => ({ ...p, country: "" }));
+                } else {
+                  setManualCountry(false);
+                  setPersonalInfo((p) => ({ ...p, country: opt.value }));
+                }
+              }}
+            />
+          ) : (
+            <>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Enter country manually"
+                value={personalInfo.country || ""}
+                onChange={(e) =>
+                  setPersonalInfo((p) => ({ ...p, country: e.target.value }))
+                }
+              />
+              <button
+                type="button"
+                className="manual-btn"
+                onClick={() => setManualCountry(false)}
+              >
+                ⬅ Use dropdown
+              </button>
+            </>
+          )}
+
           <input
-            type="text"
-            className="form-input"
+            type="hidden"
             name="country"
             value={personalInfo.country || ""}
-            onChange={handleChange}
-            required
           />
         </div>
 
+        {/* STATE */}
         <div className="form-group">
           <label className="form-label required">State</label>
-          <input
-            type="text"
-            className="form-input"
-            name="state"
-            value={personalInfo.state || ""}
-            onChange={handleChange}
-            required
-          />
+
+          {!manualState ? (
+            <Select
+              options={
+                personalInfo.country
+                  ? [
+                      ...stateList,
+                      { label: "➕ Enter manually", value: "__manual" },
+                    ]
+                  : [{ label: "Select Country first", value: "" }]
+              }
+              placeholder={
+                personalInfo.country
+                  ? "Search state..."
+                  : "Select Country first"
+              }
+              value={
+                stateList.find((s) => s.value === personalInfo.state) || null
+              }
+              onChange={(opt) => {
+                if (!personalInfo.country) return;
+
+                if (opt.value === "__manual") {
+                  setManualState(true);
+                  setPersonalInfo((p) => ({ ...p, state: "" }));
+                } else {
+                  setManualState(false);
+                  setPersonalInfo((p) => ({ ...p, state: opt.value }));
+                }
+              }}
+              isDisabled={!personalInfo.country}
+            />
+          ) : (
+            <>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Enter state manually"
+                value={personalInfo.state || ""}
+                onChange={(e) =>
+                  setPersonalInfo((p) => ({ ...p, state: e.target.value }))
+                }
+              />
+              <button
+                type="button"
+                className="manual-btn"
+                onClick={() => setManualState(false)}
+              >
+                ⬅ Use dropdown
+              </button>
+            </>
+          )}
+
+          <input type="hidden" name="state" value={personalInfo.state || ""} />
         </div>
 
+        {/* CITY */}
         <div className="form-group">
           <label className="form-label required">City</label>
-          <input
-            type="text"
-            className="form-input"
-            name="city"
-            value={personalInfo.city || ""}
-            onChange={handleChange}
-            required
-          />
+
+          {!manualCity ? (
+            <Select
+              options={
+                personalInfo.state
+                  ? [
+                      ...cityList,
+                      { label: "➕ Enter manually", value: "__manual" },
+                    ]
+                  : [{ label: "Select State first", value: "" }]
+              }
+              placeholder={
+                personalInfo.state ? "Search city..." : "Select State first"
+              }
+              value={
+                cityList.find((c) => c.value === personalInfo.city) || null
+              }
+              onChange={(opt) => {
+                if (!personalInfo.state) return;
+
+                if (opt.value === "__manual") {
+                  setManualCity(true);
+                  setPersonalInfo((p) => ({ ...p, city: "" }));
+                } else {
+                  setManualCity(false);
+                  setPersonalInfo((p) => ({ ...p, city: opt.value }));
+                }
+              }}
+              isDisabled={!personalInfo.state}
+            />
+          ) : (
+            <>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Enter city manually"
+                value={personalInfo.city || ""}
+                onChange={(e) =>
+                  setPersonalInfo((p) => ({ ...p, city: e.target.value }))
+                }
+              />
+              <button
+                type="button"
+                className="manual-btn"
+                onClick={() => setManualCity(false)}
+              >
+                ⬅ Use dropdown
+              </button>
+            </>
+          )}
+
+          <input type="hidden" name="city" value={personalInfo.city || ""} />
         </div>
 
+        {/* POSTAL CODE */}
         <div className="form-group">
           <label className="form-label required">Postal Code</label>
           <input

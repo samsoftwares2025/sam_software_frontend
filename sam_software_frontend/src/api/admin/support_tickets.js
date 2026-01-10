@@ -20,27 +20,53 @@ const getUserId = () => {
  * - search
  */
 export const getSupportTickets = async (filters = {}) => {
-  const userId = getUserId();
+  const token = localStorage.getItem("accessToken");
+  const userId = localStorage.getItem("user_id");
 
-  const payload = {
+  const { data } = await http.post("/hr/list-all-support-ticket/", {
     user_id: userId,
+    page: 1,
+    page_size: 20, 
+  });
 
-    // optional filters
+ return {
+  list: (data.support_tickets || []).map((t) => ({
+    ...t,
+    submitted_by: t.submitted_by
+      ? { id: t.submitted_by, name: t.submitted_by_name }
+      : null,
+    assigned_to: t.assigned_to
+      ? { id: t.assigned_to, name: t.assigned_to_name }
+      : null,
+  })),
+  pagination: data.pagination || { total_pages: 1, total_records: 0 }
+};
+
+
+
+};
+
+
+
+
+export const filterSupportTickets = async (filters) => {
+  const userId = localStorage.getItem("userId");
+
+  const body = {
+    user_id: Number(userId),
+    page: filters.page || 1,
+    page_size: filters.page_size || 20,
     status: filters.status || "",
-    from_date: filters.from_date || "",
-    to_date: filters.to_date || "",
+    search: filters.search || "",
     assigned_to: filters.assigned_to || "",
     submitted_by: filters.submitted_by || "",
-    search: filters.search || "",
   };
 
-  const { data } = await http.post(
-    "/hr/list-all-support-ticket/",
-    payload
-  );
-
+  const { data } = await http.post("/hr/filter-support-ticket/", body);
   return data;
 };
+
+
 
 /**
  * ===============================
@@ -89,25 +115,5 @@ export const updateSupportTicket = async (payload) => {
     }
   );
 
-  return data;
-};
-
-
-
-
-export const filterSupportTickets = async (filters) => {
-  const userId = localStorage.getItem("userId");
-
-  const body = {
-    user_id: Number(userId),
-    page: filters.page || 1,
-    page_size: filters.page_size || 20,
-    status: filters.status || "",
-    search: filters.search || "",
-    assigned_to: filters.assigned_to || "",
-    submitted_by: filters.submitted_by || "",
-  };
-
-  const { data } = await http.post("/hr/filter-support-ticket/", body);
   return data;
 };

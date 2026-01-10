@@ -51,7 +51,7 @@ function UpdateDesignationPage() {
   const desgId = params.get("id");
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [openSection] = useState("organization");
+  const [openSection,setOpenSection] = useState("organization");
 
   const [name, setName] = useState("");
   const [originalName, setOriginalName] = useState("");
@@ -196,7 +196,7 @@ function UpdateDesignationPage() {
           isMobileOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           openSection={openSection}
-          setOpenSection={() => {}}
+          setOpenSection={setOpenSection}
         />
 
         <main className="main">

@@ -3,7 +3,10 @@ import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import "../../assets/styles/admin.css";
 
-import {getTicketTypes as apiGetTicketTypes,deleteTicketType as apiDeleteTicketType} from "../../api/admin/ticket_type";
+import {
+  getTicketTypes as apiGetTicketTypes,
+  deleteTicketType as apiDeleteTicketType,
+} from "../../api/admin/ticket_type";
 
 function TicketTypesPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -97,9 +100,7 @@ function TicketTypesPage() {
     try {
       await apiDeleteTicketType(typeToDelete.id);
 
-      setTicketTypes((prev) =>
-        prev.filter((t) => t.id !== typeToDelete.id)
-      );
+      setTicketTypes((prev) => prev.filter((t) => t.id !== typeToDelete.id));
 
       closeDeleteModal();
     } catch {
@@ -149,7 +150,11 @@ function TicketTypesPage() {
           </div>
 
           <div className="filters-right" style={{ display: "flex", gap: 8 }}>
-            <button className="btn" onClick={fetchTicketTypes} disabled={loading}>
+            <button
+              className="btn"
+              onClick={fetchTicketTypes}
+              disabled={loading}
+            >
               <i className="fa-solid fa-rotate" /> Refresh
             </button>
 
@@ -175,10 +180,10 @@ function TicketTypesPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th style={{ width: "80px" }}>Order No</th>
-                  <th>Title</th>
-                  <th>Description</th>
-                  <th>Actions</th>
+                  <th style={{ width: "8%" }}>Order No</th>
+                  <th style={{ width: "20%" }}>Title</th>
+                  <th style={{ width: "55%" }}>Description</th>
+                  <th style={{ width: "17%" }}>Actions</th>
                 </tr>
               </thead>
 
@@ -186,8 +191,8 @@ function TicketTypesPage() {
                 {filtered.map((row, index) => (
                   <tr key={row.id}>
                     <td style={{ textAlign: "center" }}>{index + 1}</td>
-                    <td>{row.title}</td>
-                    <td>{row.description || "-"}</td>
+                    <td className="wrap">{row.title}</td>
+                    <td className="wrap">{row.description || "-"}</td>
 
                     <td>
                       <div className="table-actions">
@@ -215,7 +220,10 @@ function TicketTypesPage() {
 
                 {!loading && filtered.length === 0 && (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: "center", padding: "1.5rem" }}>
+                    <td
+                      colSpan={5}
+                      style={{ textAlign: "center", padding: "1.5rem" }}
+                    >
                       No ticket types found.
                     </td>
                   </tr>
@@ -246,7 +254,9 @@ function TicketTypesPage() {
               </div>
             )}
 
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <div
+              style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
+            >
               <button className="btn" onClick={closeDeleteModal}>
                 Cancel
               </button>

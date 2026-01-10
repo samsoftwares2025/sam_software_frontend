@@ -24,7 +24,7 @@ const SuccessModal = ({ onOk }) => (
 
 function AddCompanyRulePage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [openSection] = useState("organization");
+  const [openSection,setOpenSection] = useState("organization");
 
   const [title, setTitle] = useState("");
   const [shortDescription, setShortDescription] = useState("");
@@ -103,7 +103,7 @@ function AddCompanyRulePage() {
           isMobileOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           openSection={openSection}
-          setOpenSection={() => {}}
+          setOpenSection={setOpenSection}
         />
 
         <main className="main">

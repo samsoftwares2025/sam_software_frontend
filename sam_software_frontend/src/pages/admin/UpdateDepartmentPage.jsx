@@ -31,7 +31,7 @@ function UpdateDepartmentPage() {
   const deptId = params.get("id");
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [openSection] = useState("organization");
+  const [openSection,setOpenSection] = useState("organization");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -146,7 +146,7 @@ function UpdateDepartmentPage() {
           isMobileOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           openSection={openSection}
-          setOpenSection={() => {}}
+          setOpenSection={setOpenSection}
         />
 
         <main className="main">

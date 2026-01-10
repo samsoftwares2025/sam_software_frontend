@@ -176,9 +176,7 @@ function EmployeeProfile() {
             <p>
               <b>Employment Type:</b> {profile.employment_type || "-"}
             </p>
-            <p>
-              <b>Industry:</b> {profile.industry || "-"}
-            </p>
+         
             <p>
               <b>Work Location:</b> {profile.work_location || "-"}
             </p>
@@ -186,6 +184,12 @@ function EmployeeProfile() {
               <b>Joining Date:</b>{" "}
               {profile.joining_date
                 ? new Date(profile.joining_date).toLocaleDateString()
+                : "-"}
+            </p>
+             <p>
+              <b>Last Working Date:</b>{" "}
+              {profile.last_working_date
+                ? new Date(profile.last_working_date).toLocaleDateString()
                 : "-"}
             </p>
             <p>

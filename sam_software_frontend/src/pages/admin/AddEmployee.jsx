@@ -10,32 +10,55 @@ function AddEmployeePage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [openSection, setOpenSection] = useState("employees");
 
-  const handleMenuClick = () => {
-    setIsSidebarOpen((prev) => !prev);
+  /* ======================================================
+     FAILURE MODAL
+  ====================================================== */
+  const [showFailureModal, setShowFailureModal] = useState(false);
+
+  const FailureModal = ({ onClose }) => (
+    <div className="modal-overlay">
+      <div className="modal-card error">
+     
+        <h2>❌ Failed to Add Employee</h2>
+        <p>Something went wrong while creating the employee. Please try again.</p>
+
+        <button className="btn btn-primary" onClick={onClose}>
+          OK
+        </button>
+      </div>
+    </div>
+  );
+
+  const handleMenuClick = () => setIsSidebarOpen((prev) => !prev);
+  const handleOverlayClick = () => setIsSidebarOpen(false);
+
+  /* ======================================================
+     HANDLE FORM SUBMIT
+  ====================================================== */
+  const handleFormSubmit = async (formData) => {
+    try {
+      const userId = localStorage.getItem("userId");
+      formData.append("user_id", userId);
+
+      const response = await createEmploye(formData);
+
+      // If backend returns success:false → Show modal
+      if (!response?.success) {
+        setShowFailureModal(true);
+        return response;
+      }
+
+      return response; // Important for AddEmployeeForm success modal
+    } catch (error) {
+      console.error("Failed to create employee:", error);
+      setShowFailureModal(true); // Show modal on exception
+      return { success: false };
+    }
   };
 
-  const handleOverlayClick = () => {
-    setIsSidebarOpen(false);
-  };
-
-
-const handleFormSubmit = async (formData) => {
-  try {
-    const userId = localStorage.getItem("userId");
-    formData.append("user_id", userId);
-
-    const response = await createEmploye(formData);
-    console.log("Employee created:", response);
-
-    return response; // ✅ IMPORTANT
-  } catch (error) {
-    console.error("Failed to create employee:", error);
-    return { success: false };
-  }
-};
-
-
-
+  /* ======================================================
+     RENDER
+  ====================================================== */
   return (
     <div className="container">
       <Sidebar
@@ -47,8 +70,6 @@ const handleFormSubmit = async (formData) => {
 
       <main className="main">
         <Header onMenuClick={handleMenuClick} />
-
-        {/* <div className="the_line" /> */}
 
         <div className="page-header">
           <div className="page-title">
@@ -62,12 +83,10 @@ const handleFormSubmit = async (formData) => {
           </button>
         </div>
 
-        <AddEmployeeForm
-          mode="create"
-          onSubmit={handleFormSubmit}
-        />
+        <AddEmployeeForm mode="create" onSubmit={handleFormSubmit} />
       </main>
 
+      {/* Sidebar dark overlay */}
       <div
         id="sidebarOverlay"
         className={`sidebar-overlay ${isSidebarOpen ? "show" : ""}`}
@@ -75,6 +94,11 @@ const handleFormSubmit = async (formData) => {
         aria-hidden={!isSidebarOpen}
         onClick={handleOverlayClick}
       />
+
+      {/* Failure Modal */}
+      {showFailureModal && (
+        <FailureModal onClose={() => setShowFailureModal(false)} />
+      )}
     </div>
   );
 }

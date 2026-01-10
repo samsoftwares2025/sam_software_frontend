@@ -47,7 +47,7 @@ const ErrorModal = ({ onClose }) => (
 export default function AddEmployeeForm({ onSubmit }) {
   const formRef = useRef(null);
 
-  /* ================= CORRECT INITIAL ERROR STRUCTURE ================= */
+  /* ================= ERROR HANDLING ================= */
   const initialErrorState = {
     personal_email: "",
     phone: "",
@@ -60,7 +60,7 @@ export default function AddEmployeeForm({ onSubmit }) {
 
   const [formErrors, setFormErrors] = useState(initialErrorState);
 
-  /* ================= MODAL STATES ================= */
+  /* ================= MODALS ================= */
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
 
@@ -73,8 +73,9 @@ export default function AddEmployeeForm({ onSubmit }) {
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedDesignation, setSelectedDesignation] = useState("");
   const [selectedRoleId, setSelectedRoleId] = useState("");
+  const [selectedParentId, setSelectedParentId] = useState("");
 
-  /* ================= DOCUMENT ================= */
+  /* ================= DOCUMENTS ================= */
   const emptyDocument = {
     type: "",
     number: "",
@@ -102,7 +103,7 @@ export default function AddEmployeeForm({ onSubmit }) {
 
   const [experiences, setExperiences] = useState([emptyExperience]);
 
-  /* ================= FETCH DATA ================= */
+  /* ================= FETCH INITIAL DATA ================= */
   useEffect(() => {
     const fetchAll = async () => {
       try {
@@ -121,7 +122,7 @@ export default function AddEmployeeForm({ onSubmit }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 🔥 Check if any duplicate errors exist
+    // If any duplicate error exists → show error modal
     const hasErrors = Object.values(formErrors).some(
       (err) => err && err.length > 0
     );
@@ -133,17 +134,12 @@ export default function AddEmployeeForm({ onSubmit }) {
 
     const formData = new FormData(e.target);
 
-  
-
-    if (personalInfo.image) {
-      formData.append("image", personalInfo.image);
-    }
-
-    /* EMPLOYMENT */
-    formData.append("employment_type", selectedEmploymentType || "");
+    /* EMPLOYMENT FIELDS */
+    formData.append("parent_id", selectedParentId || "");
+    formData.append("employment_type_id", selectedEmploymentType);
     formData.append("department_id", selectedDepartment || "");
     formData.append("designation_id", selectedDesignation || "");
-    formData.append("role_id", selectedRoleId || "");
+    formData.append("user_role_id", selectedRoleId || "");
 
     /* DOCUMENTS */
     const mappedDocs = documents.map((doc, idx) => ({
@@ -165,15 +161,32 @@ export default function AddEmployeeForm({ onSubmit }) {
       });
     });
 
-    /* EXPERIENCE */
-    formData.append("experience", JSON.stringify(experiences));
+    /* EXPERIENCE — clean */
+    const cleanedExperience = experiences
+      .filter((exp) =>
+        exp.company_name?.trim() ||
+        exp.job_title?.trim() ||
+        exp.start_date ||
+        exp.end_date ||
+        exp.responsibilities?.trim()
+      )
+      .map((exp) => ({
+        company_name: exp.company_name || "",
+        job_title: exp.job_title || "",
+        start_date: exp.start_date || "",
+        end_date: exp.end_date || "",
+        responsibilities: exp.responsibilities || "",
+      }));
 
-    /* SUBMIT TO SERVER */
+    formData.append(
+      "experience",
+      JSON.stringify(cleanedExperience.length > 0 ? cleanedExperience : [])
+    );
+
+    /* SUBMIT TO BACKEND */
     try {
       const res = await onSubmit(formData);
-      if (res?.success) {
-        setShowSuccessModal(true);
-      }
+      if (res?.success) setShowSuccessModal(true);
     } catch (err) {
       console.error(err);
     }
@@ -185,20 +198,23 @@ export default function AddEmployeeForm({ onSubmit }) {
 
     setPersonalInfo({});
     setPhotoPreview(null);
+
     setSelectedEmploymentType("");
     setSelectedDepartment("");
     setSelectedDesignation("");
     setSelectedRoleId("");
+    setSelectedParentId("");
+
     setDocuments([emptyDocument]);
     setExperiences([emptyExperience]);
 
-    setFormErrors(initialErrorState); // ✅ correct reset
+    setFormErrors(initialErrorState);
   };
 
-  /* ================= RENDER ================= */
   return (
     <>
       <form className="form-container" ref={formRef} onSubmit={handleSubmit}>
+        {/* Personal Info */}
         <PersonalInfoSection
           personalInfo={personalInfo}
           setPersonalInfo={setPersonalInfo}
@@ -216,19 +232,30 @@ export default function AddEmployeeForm({ onSubmit }) {
           setFormErrors={setFormErrors}
         />
 
+        {/* Employment Info */}
         <EmploymentSection
           mode="add"
+          initialValues={{}}
+
           selectedEmploymentType={selectedEmploymentType}
           setSelectedEmploymentType={setSelectedEmploymentType}
+
           selectedDepartment={selectedDepartment}
           setSelectedDepartment={setSelectedDepartment}
+
           selectedDesignation={selectedDesignation}
           setSelectedDesignation={setSelectedDesignation}
+
           selectedRoleId={selectedRoleId}
           setSelectedRoleId={setSelectedRoleId}
+
+          selectedParentId={selectedParentId}
+          setSelectedParentId={setSelectedParentId}
+
           setFormErrors={setFormErrors}
         />
 
+        {/* Experience */}
         <PreviousExperienceSection
           experiences={experiences}
           onAdd={() =>
@@ -246,6 +273,7 @@ export default function AddEmployeeForm({ onSubmit }) {
           }
         />
 
+        {/* Documents */}
         <DocumentsSection
           documents={documents}
           onAdd={() => setDocuments((prev) => [...prev, { ...emptyDocument }])}
@@ -288,15 +316,16 @@ export default function AddEmployeeForm({ onSubmit }) {
           onRemoveDocument={(index) =>
             setDocuments((prev) => prev.filter((_, i) => i !== index))
           }
-          setFormErrors={setFormErrors}
         />
 
+        {/* Salary Section */}
         <CompensationSection
           setFormErrors={setFormErrors}
           formErrors={formErrors}
           employeeId={null}
         />
 
+        {/* Emergency Contact */}
         <EmergencyContactSection
           setFormErrors={setFormErrors}
           formErrors={formErrors}
@@ -318,6 +347,7 @@ export default function AddEmployeeForm({ onSubmit }) {
         </div>
       </form>
 
+      {/* Success Modal */}
       {showSuccessModal && (
         <SuccessModal
           onClose={() => {
@@ -327,6 +357,7 @@ export default function AddEmployeeForm({ onSubmit }) {
         />
       )}
 
+      {/* Error Modal */}
       {showErrorModal && (
         <ErrorModal onClose={() => setShowErrorModal(false)} />
       )}

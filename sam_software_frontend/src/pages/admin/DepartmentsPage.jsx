@@ -192,8 +192,8 @@
               <table className="data-table" id="deptTable">
                 <thead>
                   <tr>
-                    <th style={{ width: "80px" }}>Order No</th>
-                    <th>Department</th>
+                    <th style={{ width: "7%" }}>Order No</th>
+                    <th style={{ width: "75%" }}>Department</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -203,7 +203,7 @@
                     <tr key={row.id}>
                       <td style={{ textAlign: "center" }}>{index + 1}</td>
                       <td>
-                        <div className="emp-name">{row.name}</div>
+                        <div className="wrap">{row.name}</div>
                       </td>
 
                       <td>

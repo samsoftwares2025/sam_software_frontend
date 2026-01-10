@@ -231,16 +231,16 @@ function EmployeeDocumentsPage() {
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>#</th>
-                      <th>Employee ID</th>
-                      <th>Employee</th>
-                      <th>Document Type</th>
-                      <th>Document No.</th>
-                      <th>Country</th>
-                      <th>Issue Date</th>
-                      <th>Expiry Date</th>
-                      <th>Status</th>
-                      <th>Action</th>
+                      <th style={{ width: "5%" }}>Order No</th>
+                      <th style={{ width: "5%" }}>Employee ID</th>
+                      <th style={{ width: "15%" }}>Name</th>
+                      <th style={{ width: "10%" }}>Document Type</th>
+                      <th style={{ width: "10%" }}>Document No.</th>
+                      <th style={{ width: "10%" }}>Country</th>
+                      <th style={{ width: "15%" }}>Issue Date</th>
+                      <th style={{ width: "15%" }}>Expiry Date</th>
+                      <th style={{ width: "5%" }}>Status</th>
+                      <th style={{ width: "10%" }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -257,20 +257,20 @@ function EmployeeDocumentsPage() {
 
                             {/* EMPLOYEE ID */}
                             {docIndex === 0 && (
-                              <td rowSpan={emp.documents.length}>
+                              <td  rowSpan={emp.documents.length}>
                                 {emp.employee_id}
                               </td>
                             )}
 
                             {/* EMPLOYEE NAME */}
                             {docIndex === 0 && (
-                              <td rowSpan={emp.documents.length}>{emp.name}</td>
+                              <td  rowSpan={emp.documents.length}>{emp.name}</td>
                             )}
 
                             {/* DOCUMENT FIELDS */}
-                            <td>{doc.document_type}</td>
-                            <td>{doc.document_number}</td>
-                            <td>{doc.country}</td>
+                            <td >{doc.document_type}</td>
+                            <td >{doc.document_number}</td>
+                            <td >{doc.country}</td>
                             <td>
                               {doc.issue_date
                                 ? new Date(doc.issue_date).toLocaleDateString(

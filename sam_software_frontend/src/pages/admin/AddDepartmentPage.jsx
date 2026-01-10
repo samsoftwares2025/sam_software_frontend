@@ -25,7 +25,7 @@ const SuccessModal = ({ onOk }) => (
 
 function AddDepartmentPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [openSection] = useState("organization");
+  const [openSection,setOpenSection] = useState("organization");
 
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -87,7 +87,7 @@ function AddDepartmentPage() {
           isMobileOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           openSection={openSection}
-          setOpenSection={() => {}}
+          setOpenSection={setOpenSection}
         />
 
         <main className="main">

@@ -168,9 +168,9 @@ function DesignationsPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th style={{ width: 80 }}>Order No</th>
-                  <th>Designation</th>
-                  <th>Department</th>
+                  <th style={{ width: "5%" }}>Order No</th>
+                  <th style={{ width: "40%" }}>Designation</th>
+                  <th style={{ width: "40%" }}>Department</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -181,11 +181,11 @@ function DesignationsPage() {
                     <td style={{ textAlign: "center" }}>{index + 1}</td>
 
                     <td>
-                      <div className="emp-name">{row.name}</div>
+                      <div className="wrap">{row.name}</div>
                     </td>
 
                     <td>
-                      <div className="emp-name">
+                      <div className="wrap">
                         {row.department_name || "—"}
                       </div>
                     </td>

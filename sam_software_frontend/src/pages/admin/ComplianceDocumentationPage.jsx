@@ -3,7 +3,10 @@ import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import "../../assets/styles/admin.css";
 
-import { filterSupportTickets } from "../../api/admin/support_tickets";
+import {
+  getSupportTickets,
+  filterSupportTickets,
+} from "../../api/admin/support_tickets";
 import { getEmployeesList } from "../../api/admin/employees";
 
 import Select from "react-select";
@@ -77,13 +80,38 @@ function ComplianceDocumentationPage() {
     }
   };
 
+  const isFilterApplied = () => {
+    return (
+      searchTerm.trim() !== "" ||
+      status !== "" ||
+      submittedBy !== "" ||
+      assignedTo !== ""
+    );
+  };
+
   /* ================= FETCH TICKETS ================= */
   const fetchTickets = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const res = await filterSupportTickets({
+      let res;
+
+      // IF NO FILTER → USE NORMAL LIST API
+      if (!isFilterApplied()) {
+        const list = await getSupportTickets();
+        const resp = await getSupportTickets();
+
+        setTickets(resp.list);
+        setTotalCount(resp.pagination.total_records);
+        setTotalPages(resp.pagination.total_pages);
+
+        setLoading(false);
+        return;
+      }
+
+      // IF FILTERS EXIST → USE FILTER API
+      res = await filterSupportTickets({
         search: searchTerm,
         status,
         submitted_by: submittedBy,
@@ -105,8 +133,6 @@ function ComplianceDocumentationPage() {
         : [];
 
       setTickets(normalized);
-
-      /* Pagination */
       setTotalPages(res.pagination.total_pages);
       setTotalCount(res.pagination.total_records);
     } catch (err) {
@@ -202,7 +228,11 @@ function ComplianceDocumentationPage() {
                 placeholder="Submitted By"
                 isClearable
                 classNamePrefix="react-select"
-                value={employeeOptions.find((o) => o.value === Number(submittedBy)) || null}
+                value={
+                  employeeOptions.find(
+                    (o) => o.value === Number(submittedBy)
+                  ) || null
+                }
                 onChange={(opt) => {
                   setPage(1);
                   setSubmittedBy(opt ? opt.value : "");
@@ -217,7 +247,10 @@ function ComplianceDocumentationPage() {
                 placeholder="Assigned To"
                 isClearable
                 classNamePrefix="react-select"
-                value={employeeOptions.find((o) => o.value === Number(assignedTo)) || null}
+                value={
+                  employeeOptions.find((o) => o.value === Number(assignedTo)) ||
+                  null
+                }
                 onChange={(opt) => {
                   setPage(1);
                   setAssignedTo(opt ? opt.value : "");
@@ -235,7 +268,8 @@ function ComplianceDocumentationPage() {
         <div className="table-container">
           <div className="table-header-bar">
             <h4>
-              Compliance Tickets <span className="badge-pill">Total: {totalCount}</span>
+              Compliance Tickets{" "}
+              <span className="badge-pill">Total: {totalCount}</span>
             </h4>
           </div>
 
@@ -249,15 +283,15 @@ function ComplianceDocumentationPage() {
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>#</th>
-                      <th>Date</th>
-                      <th>Tracking ID</th>
-                      <th>Subject</th>
-                      <th>Submitted By</th>
-                      <th>Assigned To</th>
-                      <th>Status</th>
-                      <th>Attachment</th>
-                      <th>Action</th>
+                      <th style={{ width: "5%" }}>Order No</th>
+                      <th style={{ width: "5%" }}>Date</th>
+                      <th style={{ width: "10%" }}>Tracking ID</th>
+                      <th style={{ width: "30%" }}>Subject</th>
+                      <th style={{ width: "15%" }}>Submitted By</th>
+                      <th style={{ width: "15%" }}>Assigned To</th>
+                      <th style={{ width: "5%" }}>Status</th>
+                      <th style={{ width: "5%" }}>Attachment</th>
+                      <th style={{ width: "10%" }}>Action</th>
                     </tr>
                   </thead>
 
@@ -272,14 +306,18 @@ function ComplianceDocumentationPage() {
                         <tr key={t.id}>
                           <td>{startRow + index}</td>
 
-                          <td>{new Date(t.created_at).toLocaleDateString("en-GB")}</td>
+                          <td>
+                            {new Date(t.created_at).toLocaleDateString("en-GB")}
+                          </td>
 
                           <td>{t.tracking_id}</td>
-                          <td>{t.subject}</td>
+                          <td className="wrap">{t.subject}</td>
 
-                          <td>{t.submitted_by?.name || "-"}</td>
+                          <td className="wrap">
+                            {t.submitted_by?.name || "-"}
+                          </td>
 
-                          <td>{t.assigned_to?.name || "-"}</td>
+                          <td className="wrap">{t.assigned_to?.name || "-"}</td>
 
                           <td>
                             <span
@@ -292,7 +330,6 @@ function ComplianceDocumentationPage() {
                           </td>
 
                           <td>
-                            
                             {file ? (
                               <div style={{ display: "flex", gap: 8 }}>
                                 <button
@@ -322,24 +359,23 @@ function ComplianceDocumentationPage() {
 
                           <td>
                             <div className="table-actions">
-                            <button
-                              className="icon-btn view"
-                              onClick={() =>
-                                (window.location.href = `/admin/compliance-ticket/${t.id}`)
-                              }
-                            >
-                              <i className="fa-solid fa-eye" />
-                            </button>
+                              <button
+                                className="icon-btn view"
+                                onClick={() =>
+                                  (window.location.href = `/admin/compliance-ticket/${t.id}`)
+                                }
+                              >
+                                <i className="fa-solid fa-eye" />
+                              </button>
 
-                            <button
-                              className="icon-btn edit"
-                              onClick={() =>
-                                (window.location.href =
-                                  `/admin/update/compliance-ticket/${t.id}`)
-                              }
-                            >
-                              <i className="fa-solid fa-pen" />
-                            </button>
+                              <button
+                                className="icon-btn edit"
+                                onClick={() =>
+                                  (window.location.href = `/admin/update/compliance-ticket/${t.id}`)
+                                }
+                              >
+                                <i className="fa-solid fa-pen" />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -364,20 +400,25 @@ function ComplianceDocumentationPage() {
                 </div>
 
                 <div className="pagination">
-                  <button disabled={page === 1} onClick={() => handlePageChange(page - 1)}>
+                  <button
+                    disabled={page === 1}
+                    onClick={() => handlePageChange(page - 1)}
+                  >
                     <i className="fa-solid fa-angle-left"></i>
                   </button>
 
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                    <button
-                      key={p}
-                      className={p === page ? "active-page" : ""}
-                      onClick={() => handlePageChange(p)}
-                      disabled={p === page}
-                    >
-                      {p}
-                    </button>
-                  ))}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (p) => (
+                      <button
+                        key={p}
+                        className={p === page ? "active-page" : ""}
+                        onClick={() => handlePageChange(p)}
+                        disabled={p === page}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
 
                   <button
                     disabled={page === totalPages}

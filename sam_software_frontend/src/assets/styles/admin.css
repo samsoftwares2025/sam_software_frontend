@@ -1312,6 +1312,40 @@ table.data-table tbody tr:hover {
     display: inline-flex;
     gap: 6px;
 }
+.table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    margin-top: 8px;
+    border-top: 1px solid var(--muted-border);
+    font-size: 13px;
+    color: var(--text-light);
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Global fix: let TD wrap but keep table layout nice */
+/* Allow wrapping only for specific columns */
+table.data-table td.wrap,
+table.data-table th.wrap {
+    white-space: normal !important;
+    word-break: break-word;
+}
+
+
+#tableInfo {
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+ 
+  #tableInfo {
+    width: 100%;
+    text-align: center;
+  }
+
+}
+
 
 .icon-btn {
     width: 28px;
@@ -1358,39 +1392,51 @@ table.data-table tbody tr:hover {
     font-weight: 600;
 }
 
-.status-onbudget {
-    background: #ecfdf3;
-    color: #166534;
-}
 
-.status-overbudget {
-    background: #fef2f2;
-    color: #b91c1c;
-}
 
-.status-underutilized {
-    background: #eff6ff;
-    color: #1d4ed8;
-}
-
-.table-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 12px;
-    margin-top: 8px;
-    border-top: 1px solid var(--muted-border);
-    font-size: 13px;
-    color: var(--text-light);
-    flex-wrap: wrap;
-    gap: 8px;
-}
 
 .pagination {
     display: inline-flex;
     gap: 4px;
     align-items: center;
 }
+.pagination-wrapper {
+  display: flex;
+  justify-content: flex-end; /* right align on desktop */
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap; /* 🔑 allow wrapping on small screens */
+}
+
+/* Pagination buttons row */
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Keep text readable */
+
+
+
+/* 📱 Mobile view */
+@media (max-width: 640px) {
+  .pagination-wrapper {
+    justify-content: center; /* center on mobile */
+  }
+
+  #tableInfo {
+    width: 100%;
+    text-align: center;
+  }
+
+  .pagination {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 
 .pagination button {
     min-width: 28px;
@@ -1657,44 +1703,6 @@ table.data-table tbody tr:hover {
   display: flex;
   flex-direction: column;
   margin-bottom: 0.75rem; /* reduced from default */
-}
-
-.pagination-wrapper {
-  display: flex;
-  justify-content: flex-end; /* right align on desktop */
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
-  flex-wrap: wrap; /* 🔑 allow wrapping on small screens */
-}
-
-/* Pagination buttons row */
-.pagination {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-/* Keep text readable */
-#tableInfo {
-  white-space: nowrap;
-}
-
-/* 📱 Mobile view */
-@media (max-width: 640px) {
-  .pagination-wrapper {
-    justify-content: center; /* center on mobile */
-  }
-
-  #tableInfo {
-    width: 100%;
-    text-align: center;
-  }
-
-  .pagination {
-    width: 100%;
-    justify-content: center;
-  }
 }
 
 

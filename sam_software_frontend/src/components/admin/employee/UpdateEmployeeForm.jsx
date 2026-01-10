@@ -75,6 +75,8 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedDesignation, setSelectedDesignation] = useState("");
   const [selectedRoleId, setSelectedRoleId] = useState("");
+  const [selectedParentId, setSelectedParentId] = useState("");
+  const [selectedIsActive, setSelectedIsActive] = useState("");
 
   const [documents, setDocuments] = useState([]);
   const [experiences, setExperiences] = useState([]);
@@ -113,6 +115,9 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     setSelectedDepartment(initialValues?.department_id || "");
     setSelectedDesignation(initialValues?.designation_id || "");
     setSelectedRoleId(initialValues?.user_role_id || "");
+    setSelectedParentId(initialValues?.parent_id || "");
+    setSelectedIsActive(initialValues?.is_active === true ? "True" : "False");
+
 
     /* ------------------- DOCUMENTS ------------------- */
     if (Array.isArray(initialValues?.documents)) {
@@ -175,9 +180,7 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
 
   const handleDocumentChange = (idx, field, value) => {
     setDocuments((prev) =>
-      prev.map((doc, i) =>
-        i === idx ? { ...doc, [field]: value } : doc
-      )
+      prev.map((doc, i) => (i === idx ? { ...doc, [field]: value } : doc))
     );
   };
 
@@ -247,9 +250,7 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
 
   const handleExperienceChange = (key, field, value) => {
     setExperiences((prev) =>
-      prev.map((exp) =>
-        exp._key === key ? { ...exp, [field]: value } : exp
-      )
+      prev.map((exp) => (exp._key === key ? { ...exp, [field]: value } : exp))
     );
   };
 
@@ -283,7 +284,14 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     }
 
     const formData = new FormData(e.target);
-    formData.append("user_role_id", selectedRoleId);
+    formData.append("parent_id", selectedParentId || "");
+    formData.append("employment_type_id", selectedEmploymentType);
+    formData.append("department_id", selectedDepartment || "");
+    formData.append("designation_id", selectedDesignation || "");
+    formData.append("user_role_id", selectedRoleId || "");
+    formData.append("is_active", selectedIsActive || "");
+    formData.append("last_working_date", formData.get("last_working_date"));
+
 
     /* ----- DOCS ----- */
     const mappedDocs = documents.map((doc, idx) => ({
@@ -301,9 +309,7 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     formData.append("documents", JSON.stringify(mappedDocs));
 
     documents.forEach((doc, idx) =>
-      doc.files.forEach((f) =>
-        formData.append(`document_files_${idx}`, f)
-      )
+      doc.files.forEach((f) => formData.append(`document_files_${idx}`, f))
     );
 
     /* ----- EXPERIENCE ----- */
@@ -353,6 +359,10 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
           setSelectedDesignation={setSelectedDesignation}
           selectedRoleId={selectedRoleId}
           setSelectedRoleId={setSelectedRoleId}
+          selectedParentId={selectedParentId}
+          setSelectedParentId={setSelectedParentId}
+          selectedIsActive={selectedIsActive}
+          setSelectedIsActive={setSelectedIsActive}
           formErrors={formErrors}
           setFormErrors={setFormErrors}
         />

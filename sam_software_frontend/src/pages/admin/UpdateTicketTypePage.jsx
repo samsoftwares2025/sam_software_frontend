@@ -13,14 +13,14 @@ import {
 import { useAuth } from "../../context/AuthContext";
 
 /* ================= SUCCESS MODAL ================= */
-const SuccessModal = ({ onOk }) => (
+const SuccessModal = ({ onOk, message }) => (
   <div className="modal-overlay">
     <div className="modal-card">
       <div className="success-icon">
         <i className="fa-solid fa-circle-check"></i>
       </div>
-      <h2>Ticket Type Updated</h2>
-      <p>The ticket type has been updated successfully.</p>
+      <h2>Success</h2>
+      <p>{message}</p>
 
       <button className="btn btn-primary" onClick={onOk}>
         OK
@@ -31,7 +31,7 @@ const SuccessModal = ({ onOk }) => (
 
 function UpdateTicketTypePage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [openSection] = useState("tickets");
+  const [openSection, setOpenSection] = useState("tickets");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -41,9 +41,10 @@ function UpdateTicketTypePage() {
   const [error, setError] = useState(null);
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const { id } = useParams();
   const typeId = id;
 
@@ -55,8 +56,6 @@ function UpdateTicketTypePage() {
 
       try {
         const resp = await getTicketTypeById(Number(typeId));
-
-        // 🔥 FIX: backend returns resp.ticket_type
         const t = resp?.ticket_type;
 
         setTitle(t?.title || "");
@@ -85,13 +84,22 @@ function UpdateTicketTypePage() {
     setError(null);
 
     try {
-      await updateTicketType({
+      const resp = await updateTicketType({
         type_id: Number(typeId),
         title: title.trim(),
         description: description.trim(),
       });
 
+      if (resp?.success === false) {
+        setError(resp.message || "Failed to update ticket type.");
+        setSaving(false);
+        return;
+      }
+
+      // SUCCESS → show modal with backend message
+      setSuccessMessage(resp.message || "Updated successfully");
       setShowSuccessModal(true);
+
     } catch (err) {
       console.error("UPDATE FAILED:", err);
 
@@ -99,7 +107,7 @@ function UpdateTicketTypePage() {
       const respData = err?.response?.data;
 
       if (status === 401 || status === 403) {
-        setError(respData?.detail || "Session expired. Please log in again.");
+        setError(respData?.message || "Session expired. Please log in again.");
         logout();
         navigate("/", { replace: true });
         return;
@@ -123,7 +131,7 @@ function UpdateTicketTypePage() {
           isMobileOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           openSection={openSection}
-          setOpenSection={() => {}}
+          setOpenSection={setOpenSection}
         />
 
         <main className="main">
@@ -145,11 +153,11 @@ function UpdateTicketTypePage() {
                   <div style={{ color: "red", marginBottom: 10 }}>{error}</div>
                 )}
 
-                {/* TITLE FIELD */}
                 <div className="designation-page-form-row">
                   <label>Ticket Type Title</label>
                   <input
                     className="designation-page-form-input"
+                    maxLength={"100"}
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -158,12 +166,11 @@ function UpdateTicketTypePage() {
                   />
                 </div>
 
-                {/* DESCRIPTION FIELD */}
                 <div className="designation-page-form-row">
                   <label>Description</label>
                   <textarea
                     className="designation-page-form-input"
-                    style={{ height: "90px", resize: "none" }}
+                    style={{ height: "150px", resize: "none" }}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Enter description"
@@ -194,7 +201,6 @@ function UpdateTicketTypePage() {
           </div>
         </main>
 
-        {/* overlay */}
         <div
           className={`sidebar-overlay ${isSidebarOpen ? "show" : ""}`}
           onClick={() => setIsSidebarOpen(false)}
@@ -203,7 +209,10 @@ function UpdateTicketTypePage() {
 
       {/* SUCCESS MODAL */}
       {showSuccessModal && (
-        <SuccessModal onOk={() => navigate("/admin/ticket-types")} />
+        <SuccessModal
+          message={successMessage}
+          onOk={() => navigate("/admin/ticket-types")}
+        />
       )}
     </>
   );

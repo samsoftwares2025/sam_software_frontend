@@ -29,7 +29,7 @@ function AddDesignationPage() {
 
   /* ================= LAYOUT ================= */
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [openSection] = useState("organization");
+  const [openSection,setOpenSection] = useState("organization");
 
   /* ================= FORM STATE ================= */
   const [name, setName] = useState("");
@@ -119,7 +119,7 @@ function AddDesignationPage() {
           isMobileOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           openSection={openSection}
-          setOpenSection={() => {}}
+          setOpenSection={setOpenSection}
         />
 
         <main className="main">

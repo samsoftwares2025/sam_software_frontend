@@ -269,16 +269,16 @@ function EmployeeMasterDataPage() {
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>#</th>
-                      <th>Employee ID</th>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Department</th>
-                      <th>Designation</th>
-                      <th>Location</th>
-                      <th>Status</th>
-                      <th>Joining Date</th>
-                      <th>Action</th>
+                      <th style={{ width: "5%" }}>Order No</th>
+                     <th style={{ width: "5%" }}>Employee ID</th>
+                      <th style={{ width: "15%" }}>Name</th>
+                      <th style={{ width: "10%" }}>Email</th>
+                      <th style={{ width: "10%" }}>Department</th>
+                      <th style={{ width: "10%" }}>Designation</th>
+                      <th style={{ width: "15%" }}>Location</th>
+                      <th style={{ width: "5%" }}>Status</th>
+                      <th style={{ width: "10%" }}>Joining Date</th>
+                      <th style={{ width: "10%" }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>

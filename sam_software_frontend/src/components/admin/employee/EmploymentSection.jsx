@@ -22,81 +22,49 @@ import { getEmployeesList } from "../../../api/admin/employees";
 export default function EmploymentSection({
   initialValues = {},
   mode = "add",
+
   selectedEmploymentType,
   setSelectedEmploymentType,
+
   selectedDepartment,
   setSelectedDepartment,
+
   selectedDesignation,
   setSelectedDesignation,
+
   selectedRoleId,
   setSelectedRoleId,
-  setFormErrors, // ✅ ADDED HERE
-}) {
-  const [status, setStatus] = useState("active");
 
+  selectedParentId,
+  setSelectedParentId,
+
+  selectedIsActive,
+  setSelectedIsActive,
+
+  setFormErrors,
+}) {
   const [errors, setErrors] = useState({
     employee_id: "",
     official_email: "",
   });
 
-  /* ================= EMPLOYMENT TYPE ================= */
-  const [employmentTypes, setEmploymentTypes] = useState([]);
-  const [isAddingEmploymentType, setIsAddingEmploymentType] = useState(false);
-  const [newEmploymentTypeName, setNewEmploymentTypeName] = useState("");
-
+  /* ================= EMPLOYEE LIST (Reporting Manager) ================= */
   const [employees, setEmployees] = useState([]);
-  const [selectedParentId, setSelectedParentId] = useState("");
-
   const employeeOptions = employees.map((emp) => ({
     value: emp.id,
     label: `${emp.name} (${emp.employee_id})`,
   }));
-
-  /* ================= ROLES ================= */
-  const [roles, setRoles] = useState([]);
-  const [isAddingRole, setIsAddingRole] = useState(false);
-  const [newRoleName, setNewRoleName] = useState("");
-
-  useEffect(() => {
-    if (initialValues?.parent_id && employees.length > 0) {
-      setSelectedParentId(String(initialValues.parent_id));
-    }
-  }, [initialValues, employees]);
-
-  useEffect(() => {
-    if (initialValues?.user_role_id && roles.length > 0) {
-      setSelectedRoleId(String(initialValues.user_role_id));
-    }
-  }, [initialValues, roles]);
-
-  const fetchEmploymentTypes = async () => {
-    const resp = await getEmployementTypes();
-    const list = Array.isArray(resp?.employment_types)
-      ? resp.employment_types
-      : Array.isArray(resp)
-      ? resp
-      : [];
-    setEmploymentTypes(list);
-  };
-
-  useEffect(() => {
-    fetchEmploymentTypes();
-  }, []);
-
-  const handleEmploymentTypeChange = (e) => {
-    const val = e.target.value;
-    if (val === "__add_employment_type__") {
-      setIsAddingEmploymentType(true);
-      return;
-    }
-    setSelectedEmploymentType(val);
-  };
 
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
         const list = await getEmployeesList();
         setEmployees(list);
+
+        // Prefill parent_id (edit mode)
+        if (initialValues.parent_id) {
+          setSelectedParentId(initialValues.parent_id);
+        }
       } catch (err) {
         console.error("Failed to fetch employees", err);
       }
@@ -105,14 +73,76 @@ export default function EmploymentSection({
     fetchEmployees();
   }, []);
 
+  /* ================= EMPLOYMENT TYPE ================= */
+  const [employmentTypes, setEmploymentTypes] = useState([]);
+  const [isAddingEmploymentType, setIsAddingEmploymentType] = useState(false);
+  const [newEmploymentTypeName, setNewEmploymentTypeName] = useState("");
+
+  const fetchEmploymentTypes = async () => {
+    const resp = await getEmployementTypes();
+    const list = Array.isArray(resp?.employment_types)
+      ? resp.employment_types
+      : Array.isArray(resp)
+      ? resp
+      : [];
+
+    setEmploymentTypes(list);
+
+    if (initialValues?.employment_type_id) {
+      setSelectedEmploymentType(initialValues.employment_type_id.toString());
+    }
+  };
+
+  useEffect(() => {
+    fetchEmploymentTypes();
+  }, []);
+
+  /* EMPLOYMENT TYPE HANDLER */
+  const handleEmploymentTypeChange = (e) => {
+    const val = e.target.value;
+
+    if (val === "__add_employment_type__") {
+      setIsAddingEmploymentType(true);
+      return;
+    }
+
+    setSelectedEmploymentType(val);
+  };
+
   const handleConfirmAddEmploymentType = async () => {
     if (!newEmploymentTypeName.trim()) return;
+
     const res = await createEmployementType(newEmploymentTypeName.trim());
     await fetchEmploymentTypes();
+
     setSelectedEmploymentType(String(res.id));
     setIsAddingEmploymentType(false);
     setNewEmploymentTypeName("");
   };
+
+  /* ================= ROLES ================= */
+  const [roles, setRoles] = useState([]);
+  const [isAddingRole, setIsAddingRole] = useState(false);
+  const [newRoleName, setNewRoleName] = useState("");
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const res = await getUserRoles();
+        if (res?.success) {
+          setRoles(res.user_roles || []);
+
+          if (initialValues?.user_role_id) {
+            setSelectedRoleId(initialValues.user_role_id.toString());
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load roles", err);
+      }
+    };
+
+    fetchRoles();
+  }, []);
 
   const handleRoleChange = (e) => {
     const val = e.target.value;
@@ -128,45 +158,55 @@ export default function EmploymentSection({
   const handleConfirmAddRole = async () => {
     if (!newRoleName.trim()) return;
 
-    try {
-      const res = await createRole(newRoleName.trim());
+    const res = await createRole(newRoleName.trim());
 
-      const refreshed = await getUserRoles();
-      if (refreshed?.success) {
-        setRoles(refreshed.user_roles || []);
-      }
-
-      setSelectedRoleId(String(res.id));
-      setIsAddingRole(false);
-      setNewRoleName("");
-    } catch (err) {
-      console.error("Failed to create role", err);
+    const refreshed = await getUserRoles();
+    if (refreshed?.success) {
+      setRoles(refreshed.user_roles || []);
     }
+
+    setSelectedRoleId(String(res.id));
+    setIsAddingRole(false);
+    setNewRoleName("");
   };
 
-  /* ================= DEPARTMENT / DESIGNATION ================= */
+  /* ================= DEPARTMENTS / DESIGNATIONS ================= */
   const [departments, setDepartments] = useState([]);
   const [designationsByDept, setDesignationsByDept] = useState({});
+
   const [isAddingDept, setIsAddingDept] = useState(false);
   const [newDeptLabel, setNewDeptLabel] = useState("");
+
   const [isAddingDesig, setIsAddingDesig] = useState(false);
   const [newDesigLabel, setNewDesigLabel] = useState("");
 
   const fetchDepartments = async () => {
     const res = await getDepartments();
     const list = Array.isArray(res) ? res : res?.departments || [];
-    setDepartments(list.map((d) => ({ value: d.id, label: d.name })));
+
+    const mapped = list.map((d) => ({ value: d.id, label: d.name }));
+    setDepartments(mapped);
+
+    if (initialValues?.department_id) {
+      setSelectedDepartment(initialValues.department_id.toString());
+    }
   };
 
   const fetchDesignations = async () => {
     const res = await getDesignations();
     const list = Array.isArray(res) ? res : res?.designations || [];
+
     const grouped = {};
     list.forEach((d) => {
       if (!grouped[d.department_id]) grouped[d.department_id] = [];
       grouped[d.department_id].push(d);
     });
+
     setDesignationsByDept(grouped);
+
+    if (initialValues?.designation_id) {
+      setSelectedDesignation(initialValues.designation_id.toString());
+    }
   };
 
   useEffect(() => {
@@ -176,27 +216,33 @@ export default function EmploymentSection({
 
   const handleDepartmentChange = (e) => {
     const val = e.target.value;
+
     if (val === "__add_dept__") {
       setIsAddingDept(true);
       return;
     }
+
     setSelectedDepartment(val);
     setSelectedDesignation("");
   };
 
   const handleDesignationChange = (e) => {
     const val = e.target.value;
+
     if (val === "__add_desig__") {
       setIsAddingDesig(true);
       return;
     }
+
     setSelectedDesignation(val);
   };
 
   const handleConfirmAddDepartment = async () => {
     if (!newDeptLabel.trim()) return;
+
     const res = await createDepartment(newDeptLabel.trim());
     await fetchDepartments();
+
     setSelectedDepartment(String(res.id));
     setIsAddingDept(false);
     setNewDeptLabel("");
@@ -204,50 +250,28 @@ export default function EmploymentSection({
 
   const handleConfirmAddDesignation = async () => {
     if (!newDesigLabel.trim() || !selectedDepartment) return;
+
     const res = await createDesignation({
       name: newDesigLabel.trim(),
       department_id: Number(selectedDepartment),
     });
+
     await fetchDesignations();
     setSelectedDesignation(String(res.id));
     setIsAddingDesig(false);
     setNewDesigLabel("");
   };
 
-  useEffect(() => {
-    const fetchRoles = async () => {
-      try {
-        const res = await getUserRoles();
-        if (res?.success) {
-          setRoles(res.user_roles || []);
-        }
-      } catch (err) {
-        console.error("Failed to load roles", err);
-      }
-    };
-
-    fetchRoles();
-  }, []);
-
-  /* ====================================================================
-     🔥 DUPLICATION CHECKS — now forwarded to parent via setFormErrors()
-     ==================================================================== */
-
+  /* ================= DUPLICATION CHECK (forward to parent) ================= */
   const updateErrorState = (field, value) => {
-    // internal component error
-    setErrors((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setErrors((prev) => ({ ...prev, [field]: value }));
 
-    // send error to parent (modal)
     setFormErrors((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
 
-  /* ================= RENDER ================= */
   return (
     <div className="form-section">
       <h2 className="section-title">
@@ -255,9 +279,7 @@ export default function EmploymentSection({
       </h2>
 
       <div className="form-grid">
-        {/* =======================================
-            🔥 EMPLOYEE ID (DUPLICATION CHECK)
-        ======================================== */}
+        {/* =================== EMPLOYEE ID =================== */}
         <div className={`form-group ${errors.employee_id ? "has-error" : ""}`}>
           <div className="label-row">
             <label className="form-label required">
@@ -298,9 +320,7 @@ export default function EmploymentSection({
           />
         </div>
 
-        {/* =======================================
-            🔥 COMPANY EMAIL (DUPLICATION CHECK)
-        ======================================== */}
+        {/* =================== OFFICIAL EMAIL =================== */}
         <div
           className={`form-group ${errors.official_email ? "has-error" : ""}`}
         >
@@ -353,12 +373,16 @@ export default function EmploymentSection({
             type="date"
             className="form-input"
             name="joining_date"
-            defaultValue={initialValues.joining_date || ""}
+            defaultValue={
+              initialValues.joining_date
+                ? initialValues.joining_date.slice(0, 10)
+                : ""
+            }
             required
           />
         </div>
 
-        {/* Employment Type */}
+        {/* =================== EMPLOYMENT TYPE =================== */}
         <div className="form-group">
           <label className="form-label required">Employment Type</label>
 
@@ -418,7 +442,7 @@ export default function EmploymentSection({
           )}
         </div>
 
-        {/* Department */}
+        {/* =================== DEPARTMENT =================== */}
         <div className="form-group">
           <label className="form-label required">Department</label>
 
@@ -476,7 +500,7 @@ export default function EmploymentSection({
           )}
         </div>
 
-        {/* Designation */}
+        {/* =================== DESIGNATION =================== */}
         <div className="form-group">
           <label className="form-label required">Designation</label>
 
@@ -544,7 +568,7 @@ export default function EmploymentSection({
           )}
         </div>
 
-        {/* Reporting Manager */}
+        {/* =================== REPORTING MANAGER (parent_id) =================== */}
         <div className="form-group">
           <label className="form-label">Reporting Manager</label>
 
@@ -552,16 +576,18 @@ export default function EmploymentSection({
             options={employeeOptions}
             isClearable
             placeholder="Search & select manager..."
-            value={employeeOptions.find(
-              (opt) => opt.value === Number(selectedParentId)
-            )}
+            value={
+              employeeOptions.find(
+                (opt) => opt.value === Number(selectedParentId)
+              ) || null
+            }
             onChange={(option) =>
               setSelectedParentId(option ? option.value : "")
             }
           />
         </div>
 
-        {/* Role */}
+        {/* =================== ROLE =================== */}
         <div className="form-group">
           <label className="form-label required">Role</label>
 
@@ -587,9 +613,7 @@ export default function EmploymentSection({
               className="btn btn-secondary"
               onClick={async () => {
                 const res = await getUserRoles();
-                if (res?.success) {
-                  setRoles(res.user_roles || []);
-                }
+                if (res?.success) setRoles(res.user_roles || []);
               }}
             >
               <i className="fa-solid fa-rotate-right" />
@@ -624,21 +648,39 @@ export default function EmploymentSection({
           )}
         </div>
 
-        {/* Status */}
+        {/* =================== STATUS (EDIT ONLY) =================== */}
         {mode === "edit" && (
           <div className="form-group">
             <label className="form-label required">Status</label>
 
             <select
               className="form-select"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              value={selectedIsActive}
+              onChange={(e) => setSelectedIsActive(e.target.value)}
               required
             >
               <option value="">Select Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="True">Active</option>
+              <option value="False">Inactive</option>
             </select>
+          </div>
+        )}
+
+      {/* =================== Last working Date (EDIT ONLY) =================== */}
+        {mode === "edit" && (
+          <div className="form-group">
+            <label className="form-label ">Last Working Date</label>
+            <input
+              type="date"
+              className="form-input"
+              name="last_working_date"
+              defaultValue={
+                initialValues.last_working_date
+                  ? initialValues.last_working_date.slice(0, 10)
+                  : ""
+              }
+              
+            />
           </div>
         )}
       </div>

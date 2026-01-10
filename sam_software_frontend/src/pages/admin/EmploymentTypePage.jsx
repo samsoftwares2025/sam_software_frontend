@@ -8,7 +8,7 @@ import {
   deleteEmployementType as apiDeleteEmploymentType,
 } from "../../api/admin/employement_type";
 
-function EmploymentTypesPage() { 
+function EmploymentTypesPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [openSection, setOpenSection] = useState("organization");
 
@@ -152,51 +152,52 @@ function EmploymentTypesPage() {
               </span>
             </h4>
           </div>
-
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th style={{ width: 80 }}>Order No</th>
-                <th>Employment Type</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEmploymentTypes.map((row, index) => (
-                <tr key={row.id}>
-                  <td style={{ textAlign: "center" }}>{index + 1}</td>
-                  <td>{row.name}</td>
-                  <td>
-                    <div className="table-actions">
-                      <button
-                        className="icon-btn edit"
-                        onClick={() =>
-                          (window.location.href = `/admin/update-employment-type?id=${row.id}`)
-                        }
-                      >
-                        <i className="fa-solid fa-pen" />
-                      </button>
-
-                      <button
-                        className="icon-btn delete"
-                        onClick={() => openDeleteModal(row)}
-                      >
-                        <i className="fa-solid fa-trash" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-
-              {filteredEmploymentTypes.length === 0 && (
+          <div className="data-table-wrapper">
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <td colSpan={3} style={{ textAlign: "center" }}>
-                    No Employment Types found.
-                  </td>
+                  <th style={{ width: "10%" }}>Order No</th>
+                  <th style={{ width: "50%" }}>Employment Type</th>
+                  <th>Actions</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredEmploymentTypes.map((row, index) => (
+                  <tr key={row.id}>
+                    <td style={{ textAlign: "center" }}>{index + 1}</td>
+                    <td className="wrap">{row.name}</td>
+                    <td>
+                      <div className="table-actions">
+                        <button
+                          className="icon-btn edit"
+                          onClick={() =>
+                            (window.location.href = `/admin/update-employment-type?id=${row.id}`)
+                          }
+                        >
+                          <i className="fa-solid fa-pen" />
+                        </button>
+
+                        <button
+                          className="icon-btn delete"
+                          onClick={() => openDeleteModal(row)}
+                        >
+                          <i className="fa-solid fa-trash" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+
+                {filteredEmploymentTypes.length === 0 && (
+                  <tr>
+                    <td colSpan={3} style={{ textAlign: "center" }}>
+                      No Employment Types found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </main>
 
@@ -205,15 +206,16 @@ function EmploymentTypesPage() {
           <div className="modal" style={modalStyle}>
             <h3>Confirm delete</h3>
             <p>
-              Delete Employment Type{" "}
-              <strong>{typeToDelete?.name}</strong>?
+              Delete Employment Type <strong>{typeToDelete?.name}</strong>?
             </p>
 
             {deleteError && (
               <div style={{ color: "orange" }}>{deleteError}</div>
             )}
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+            <div
+              style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}
+            >
               <button className="btn" onClick={closeDeleteModal}>
                 Cancel
               </button>
