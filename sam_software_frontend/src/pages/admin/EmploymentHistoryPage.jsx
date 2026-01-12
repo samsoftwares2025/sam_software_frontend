@@ -6,15 +6,21 @@ import "../../assets/styles/admin.css";
 
 import { getDepartments } from "../../api/admin/departments";
 import { getEmployementTypes } from "../../api/admin/employement_type";
-import { filterEmployeeHistoryData } from "../../api/admin/employees";
+import {
+  getEmployeeHistoryData,
+  filterEmployeeHistoryData,
+} from "../../api/admin/employees";
 
 /* ===============================
    Client-side filters
 ================================ */
-const applyClientSideFilters = (rows, department, employmentType) => {
+const applyClientSideFilters = (rows, search, department, type, status) => {
   return rows.filter((r) => {
+    if (search && !r.name?.toLowerCase().includes(search.toLowerCase()))
+      return false;
     if (department && r.department !== department) return false;
-    if (employmentType && r.employment_type !== employmentType) return false;
+    if (type && r.employment_type !== type) return false;
+    if (status !== "" && String(r.is_active) !== status) return false;
     return true;
   });
 };
@@ -23,8 +29,10 @@ function EmploymentHistoryPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [openSection, setOpenSection] = useState("employees");
 
-  const [history, setHistory] = useState([]);
-
+  const [masterHistory, setMasterHistory] = useState([]); // FULL DATA
+  const [history, setHistory] = useState([]); // PAGINATED DATA
+  const getStatusClassName = (isActive) =>
+    isActive ? "status-pill status-active" : "status-pill status-inactive";
   // master data
   const [departments, setDepartments] = useState([]);
   const [employmentTypes, setEmploymentTypes] = useState([]);
@@ -39,9 +47,11 @@ function EmploymentHistoryPage() {
   const [filterStatus, setFilterStatus] = useState("");
 
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
+  const pageSize = 20;
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+ const activeFilter =
+  filterStatus === "" ? "" : filterStatus === "true" ? true : false;
 
   const navigate = useNavigate();
 
@@ -49,59 +59,82 @@ function EmploymentHistoryPage() {
      LOAD MASTER DATA
   ================================ */
   useEffect(() => {
-    getDepartments()
-      .then((resp) => setDepartments(resp?.departments || []))
-      .catch(() => console.error("Failed to load departments"));
-
-    getEmployementTypes()
-      .then((resp) =>
-        setEmploymentTypes(resp?.employment_types || resp || [])
-      )
-      .catch(() => console.error("Failed to load employment types"));
+    getDepartments().then((resp) => setDepartments(resp?.departments || []));
+    getEmployementTypes().then((resp) =>
+      setEmploymentTypes(resp?.employment_types || resp || [])
+    );
   }, []);
 
   /* ===============================
-     SINGLE SOURCE OF TRUTH (DATA LOAD)
+     LOAD EMPLOYEE HISTORY (Full Data)
   ================================ */
-  const loadHistory = (pageNo = 1) => {
+  const loadAllData = () => {
     setLoading(true);
     setError(null);
 
-    filterEmployeeHistoryData({
+    const filtersApplied =
+      searchTerm || filterDepartment || filterType || filterStatus;
+
+    const apiCall = filtersApplied
+  ? filterEmployeeHistoryData({
       search: searchTerm,
-      status: filterStatus,
-      page: pageNo,
-      page_size: pageSize,
+      status: activeFilter,
+      department: filterDepartment,
+      employment_type: filterType,
+      is_active: activeFilter,
+      page: 1,
+      page_size: 99999,
     })
+  : getEmployeeHistoryData({
+      page: 1,
+      page_size: 99999,
+    });
+
+    Promise.resolve(apiCall)
       .then((resp) => {
-        let rows = resp?.users_data || [];
-
-        rows = applyClientSideFilters(rows, filterDepartment, filterType);
-
-        setHistory(rows);
-        setTotalCount(resp?.total_count || 0);
-        setTotalPages(resp?.total_pages || 1);
-        setPage(pageNo);
-
-        setStatuses([...new Set(rows.map((r) => r.status).filter(Boolean))]);
+        const allRows = resp?.users_data || [];
+        setMasterHistory(allRows);
       })
       .catch(() => setError("Unable to load employment history."))
       .finally(() => setLoading(false));
   };
 
+  // load full data once AND whenever filters change
+  useEffect(() => {
+    loadAllData();
+  }, [searchTerm, filterDepartment, filterType, filterStatus]);
+
   /* ===============================
-     INITIAL LOAD + FILTERS
+     FILTER + PAGINATE CLIENT-SIDE
   ================================ */
   useEffect(() => {
-    loadHistory(1);
-  }, [searchTerm, filterDepartment, filterType, filterStatus]);
+    let filtered = applyClientSideFilters(
+      masterHistory,
+      searchTerm,
+      filterDepartment,
+      filterType,
+      filterStatus
+    );
+
+    setStatuses([...new Set(filtered.map((r) => r.status).filter(Boolean))]);
+
+    setTotalCount(filtered.length);
+
+    const pages = Math.ceil(filtered.length / pageSize);
+    setTotalPages(pages || 1);
+
+    if (page > pages) setPage(1);
+
+    const start = (page - 1) * pageSize;
+    setHistory(filtered.slice(start, start + pageSize));
+  }, [masterHistory, searchTerm, filterDepartment, filterType, filterStatus, page]);
 
   /* ===============================
      PAGINATION
   ================================ */
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > totalPages) return;
-    loadHistory(newPage);
+    setPage(newPage);
   };
 
   /* ===============================
@@ -112,11 +145,7 @@ function EmploymentHistoryPage() {
     setFilterDepartment("");
     setFilterType("");
     setFilterStatus("");
-    loadHistory(1);
-  };
-
-  const handleAddEmployment = () => {
-    navigate("/admin/add-employee");
+    setPage(1);
   };
 
   const startRow = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -127,6 +156,7 @@ function EmploymentHistoryPage() {
   ================================ */
   return (
     <div className="container">
+
       <Sidebar
         isMobileOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -140,14 +170,13 @@ function EmploymentHistoryPage() {
 
         <div className="page-title">
           <h3>Employee Employment History</h3>
-          <p className="subtitle">
-            View and manage employment history records.
-          </p>
+          <p className="subtitle">View and manage employment history records.</p>
         </div>
 
         {/* FILTERS */}
         <div className="filters-container">
           <div className="filters-left">
+
             <div className="search-input">
               <i className="fa-solid fa-magnifying-glass" />
               <input
@@ -183,25 +212,24 @@ function EmploymentHistoryPage() {
               ))}
             </select>
 
-            <select
+             <select
               className="filter-select"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
               <option value="">All Status</option>
-              {statuses.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
             </select>
+
           </div>
 
           <div className="filters-right">
             <button className="btn btn-ghost" onClick={handleClearFilters}>
               <i className="fa-solid fa-filter-circle-xmark" /> Clear Filters
             </button>
-            <button className="btn btn-primary" onClick={handleAddEmployment}>
+
+            <button className="btn btn-primary">
               <i className="fa-solid fa-user-plus" /> Add Employee
             </button>
           </div>
@@ -209,6 +237,7 @@ function EmploymentHistoryPage() {
 
         {/* TABLE */}
         <div className="table-container">
+
           <div className="table-header-bar">
             <h4>
               Employment History{" "}
@@ -226,21 +255,20 @@ function EmploymentHistoryPage() {
                 <table className="data-table">
                   <thead>
                     <tr>
-                     <th style={{ width: "5%" }}>Order No</th>
-                      <th style={{ width: "5%" }}>Employee ID</th>
-                      <th style={{ width: "15%" }}>Name</th>
-                      <th style={{ width: "10%" }}>Employment Type</th>
-                      <th style={{ width: "10%" }}>Joining Date</th>
-                      <th style={{ width: "10%" }}>Confirmation Date</th>
-                      <th style={{ width: "10%" }}>Last Working Date</th>
-                      <th style={{ width: "15%" }}>Reporting Manager</th>
-                      <th style={{ width: "10%" }}>Action</th>
+                      <th>Order No</th>
+                      <th>Employee ID</th>
+                      <th>Name</th>
+                      <th>Employment Type</th>
+                      <th>Status</th>
+                      <th>Joining  Date</th>
+                      <th>Last Working Date</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {history.map((row, index) => {
-                      const orderNo =
-                        (page - 1) * pageSize + index + 1;
+                      const orderNo = (page - 1) * pageSize + index + 1;
 
                       return (
                         <tr key={row.id}>
@@ -248,36 +276,19 @@ function EmploymentHistoryPage() {
                           <td>{row.employee_id}</td>
                           <td>{row.name}</td>
                           <td>{row.employment_type}</td>
-                          <td>
-                            {row.joining_date
-                              ? new Date(row.joining_date).toLocaleDateString(
-                                  "en-GB"
-                                )
-                              : "-"}
-                          </td>
-                          <td>
-                            {row.confirmation_date
-                              ? new Date(
-                                  row.confirmation_date
-                                ).toLocaleDateString("en-GB")
-                              : "-"}
-                          </td>
-                          <td>
-                            {row.last_working_date
-                              ? new Date(
-                                  row.last_working_date
-                                ).toLocaleDateString("en-GB")
-                              : "-"}
-                          </td>
-                          <td>{row.reporting_manager || "-"}</td>
+                         <td>
+                          <span className={getStatusClassName(row.is_active)}>
+                            ● {row.is_active ? "Active" : "Inactive"}
+                          </span>
+                        </td>                          <td>{row.joining_date ? new Date(row.joining_date).toLocaleDateString("en-GB") : "-"}</td>
+                          <td>{row.last_working_date ? new Date(row.last_working_date).toLocaleDateString("en-GB") : "-"}</td>
+
                           <td>
                             <div className="table-actions">
                               <button
                                 className="icon-btn view"
                                 onClick={() =>
-                                  navigate(
-                                    `/admin/view-employment-history/${row.id}`
-                                  )
+                                  navigate(`/admin/view-employment-history/${row.id}`)
                                 }
                               >
                                 <i className="fa-solid fa-eye" />
@@ -313,19 +324,18 @@ function EmploymentHistoryPage() {
                     <i className="fa-solid fa-angle-left" />
                   </button>
 
-                  {Array.from(
-                    { length: totalPages },
-                    (_, i) => i + 1
-                  ).map((p) => (
-                    <button
-                      key={p}
-                      className={p === page ? "active-page" : ""}
-                      onClick={() => handlePageChange(p)}
-                      disabled={p === page}
-                    >
-                      {p}
-                    </button>
-                  ))}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (p) => (
+                      <button
+                        key={p}
+                        className={p === page ? "active-page" : ""}
+                        onClick={() => handlePageChange(p)}
+                        disabled={p === page}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
 
                   <button
                     disabled={page === totalPages}
@@ -335,8 +345,10 @@ function EmploymentHistoryPage() {
                   </button>
                 </div>
               </div>
+
             </>
           )}
+
         </div>
       </main>
     </div>

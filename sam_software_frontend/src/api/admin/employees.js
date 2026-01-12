@@ -50,7 +50,6 @@ export const filterEmployeeMasterData = async (payload) => {
  * getEmployeeHistoryData
  */
 export const getEmployeeHistoryData = async () => {
-  console.log("🔥 getEmployeeHistoryData CALLED");
 
   const userId = localStorage.getItem("userId");
 
@@ -59,7 +58,6 @@ export const getEmployeeHistoryData = async () => {
     { user_id: userId }
   );
 
-  console.log("🔥 Employee history API response:", data);
   return data;
 };
 
@@ -74,8 +72,8 @@ export const filterEmployeeHistoryData = async (payload) => {
       user_id: userId,
       search: payload?.search || "",
       status: payload?.status || "",
-      page: payload?.page || 1,
-      page_size: payload?.page_size || 20,
+      page: payload?.page ,
+      page_size: payload?.page_size ,
     }
   );
 
