@@ -50,17 +50,25 @@ export const loginUser = async (email, password) => {
 /* ================= LOGOUT ================= */
 export const logoutUser = async () => {
   try {
-    // 🔥 optional backend logout
-    await http.post("/users/logout/");
+    const token = localStorage.getItem("accessToken");
+
+    await http.post(
+      "/users/logout/",
+      {},   // empty body OK
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
   } catch (err) {
     console.error("Logout API error:", err);
   } finally {
-    // ✅ CLEAR AUTH STATE (ONLY CANONICAL KEYS)
+    // clear storage
     localStorage.removeItem("accessToken");
     localStorage.removeItem("userId");
     localStorage.removeItem("userName");
-
-    // remove axios auth header
     setAuth({ token: null });
   }
 };
+

@@ -42,7 +42,7 @@ function UpdateComplianceTicketDetails() {
   const [modalError, setModalError] = useState(false);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [openSection, setOpenSection] = useState("organization");
+  const [openSection, setOpenSection] = useState("tickets");
 
   const { id } = useParams();
   const navigate = useNavigate();

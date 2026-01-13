@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import "../../assets/styles/admin.css";
@@ -166,12 +166,36 @@ const PersonalEmploymentHistoryPage = () => {
 
           <div className="summary-box">
             <span className="summary-label">PROFILE COMPLETION</span>
-            <strong className="summary-value">
-              {getProfileCompletion()}%
-            </strong>
+            <strong className="summary-value">{getProfileCompletion()}%</strong>
           </div>
         </section>
 
+        {/* ===== FILTERS ===== */}
+        <section className="filter-section">
+          <div className="filter-group">
+            <label>From Date</label>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+            />
+          </div>
+
+          <div className="filter-group">
+            <label>To Date</label>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+            />
+          </div>
+
+          <div className="filter-actions">
+            <button className="btn btn-ghost" onClick={clearFilters}>
+              Clear
+            </button>
+          </div>
+        </section>
         {/* ===== EMPLOYEE INFO ===== */}
         <section className="info-section">
           {/* <h3 className="section-title">Employee Information</h3> */}
@@ -200,30 +224,45 @@ const PersonalEmploymentHistoryPage = () => {
             <div className="info-grid">
               <div className="info-item">
                 <span className="label">Employee ID:</span>
-                <span className="value">
+                <Link
+                  to={`/admin/employee-profile/${employee.id}`}
+                  className="value employee-link"
+                >
                   {employee?.employee_id || "—"}
-                </span>
+                </Link>
               </div>
-            
+
               <div className="info-item">
                 <span className="label">Phone:</span>
                 <span className="value">{employee?.phone || "—"}</span>
               </div>
-             
+
               <div className="info-item">
                 <span className="label">Official Email:</span>
-                <span className="value">
-                  {employee?.official_email || "—"}
-                </span>
+                <span className="value">{employee?.official_email || "—"}</span>
               </div>
-             <div className="info-item">
+              <div className="info-item">
                 <span className="label">Name:</span>
-                <span className="value">{employee?.name || "—"}</span>
+                <Link
+                  to={`/admin/employee-profile/${employee.id}`}
+                  className="value employee-link"
+                >
+                  {employee?.name || "—"}
+                </Link>
               </div>
               <div className="info-item">
                 <span className="label">Personal Email:</span>
+                <span className="value">{employee?.personal_email || "—"}</span>
+              </div>
+              <div className="info-item">
+                <span className="label">Joining Date:</span>
                 <span className="value">
-                  {employee?.personal_email || "—"}
+                  {" "}
+                  {employee?.joining_date
+                    ? new Date(employee?.joining_date).toLocaleDateString(
+                        "en-GB"
+                      )
+                    : "-"}{" "}
                 </span>
               </div>
             </div>
@@ -232,10 +271,7 @@ const PersonalEmploymentHistoryPage = () => {
 
         {/* ===== IMAGE MODAL ===== */}
         {isImageOpen && (
-          <div
-            className="image-modal"
-            onClick={() => setIsImageOpen(false)}
-          >
+          <div className="image-modal" onClick={() => setIsImageOpen(false)}>
             <div
               className="image-modal-content"
               onClick={(e) => e.stopPropagation()}
@@ -247,368 +283,75 @@ const PersonalEmploymentHistoryPage = () => {
                 ✕
               </button>
 
-              <img
-                src={employee.image}
-                alt={employee.name}
-              />
+              <img src={employee.image} alt={employee.name} />
             </div>
           </div>
         )}
 
-        {/* ===== FILTERS ===== */}
-        <section className="filter-section">
-          <div className="filter-group">
-            <label>From Date</label>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-            />
-          </div>
-
-          <div className="filter-group">
-            <label>To Date</label>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-            />
-          </div>
-
-          <div className="filter-actions">
-            <button className="btn btn-ghost" onClick={clearFilters}>
-              Clear
-            </button>
-          </div>
-        </section>
-
         {/* ===== HISTORY ===== */}
-        <section className="history-section">
-          <h3 className="section-title">Employment History</h3>
+       <section className="history-section">
+  <h3 className="section-title">Employment History</h3>
 
-          {filteredHistory.length === 0 ? (
-            <p className="small">No history available.</p>
-          ) : (
-            <div className="timeline">
-              {filteredHistory.map(({ date, item }, index) => (
-                <div className="timeline-row" key={index}>
-                  <div className="timeline-date">
-                    {date
-                      ? new Date(date).toLocaleDateString("en-GB")
-                      : "—"}
-                  </div>
+  {filteredHistory.length === 0 ? (
+    <p className="small">No history available.</p>
+  ) : (
+    <div className="timeline-clean">
+      {filteredHistory.map(({ date, item }, index) => (
+        <div className="history-card" key={index}>
+          
+          {/* LEFT TIMELINE BAR */}
+          <div className="timeline-line"></div>
 
-                  <div className="timeline-body">
-                    <div className="timeline-title">
-                      {item.department || "—"} →{" "}
-                      {item.designation || "—"}
-                    </div>
+          {/* CARD CONTENT */}
+          <div className="history-content">
 
-                    <div className="timeline-meta">
-                      {item.employment_type && (
-                        <span>Type: {item.employment_type}</span>
-                      )}
-                      {item.work_location && (
-                        <span>Location: {item.work_location}</span>
-                      )}
-                      {item.user_role && (
-                        <span>Role: {item.user_role}</span>
-                      )}
-                    </div>
-
-                    <div className="timeline-pay">
-                      {item.annual_ctc && (
-                        <span>CTC ₹{item.annual_ctc}</span>
-                      )}
-                      {item.basic_salary && (
-                        <span>Basic ₹{item.basic_salary}</span>
-                      )}
-                      {item.variable_pay && (
-                        <span>Variable ₹{item.variable_pay}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+            {/* Top Row: Order + Date */}
+            <div className="history-header">
+              <span className="history-order">#{index + 1}</span>
+              <span className="history-date">
+                {date ? new Date(date).toLocaleDateString("en-GB") : "—"}
+              </span>
             </div>
-          )}
-        </section>
+
+            {/* Position / Dept */}
+            <div className="history-title">
+              <span className="title-designation">
+                {item.designation || "—"}
+              </span>
+              <span className="title-department">
+                ({item.department || "—"})
+              </span>
+            </div>
+
+            {/* Meta Row */}
+            <div className="history-meta">
+              {item.employment_type && (
+                <div><strong>Type:</strong> {item.employment_type}</div>
+              )}
+              {item.work_location && (
+                <div><strong>Location:</strong> {item.work_location}</div>
+              )}
+              {item.user_role && (
+                <div><strong>Role:</strong> {item.user_role}</div>
+              )}
+            </div>
+
+            {/* Salary Info */}
+            <div className="history-salary">
+              {item.annual_ctc && <span>CTC: ₹{item.annual_ctc}</span>}
+              {item.basic_salary && <span>Basic: ₹{item.basic_salary}</span>}
+              {item.variable_pay && <span>Variable: ₹{item.variable_pay}</span>}
+            </div>
+
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</section>
+
       </main>
-       {/* ===== STYLES ===== */}
-      <style>{`
-        .summary-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 16px;
-          margin-top:2%;
-        }
-
-        .summary-box {
-          padding: 16px;
-          border-radius: 10px;
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-        }
-
-        .summary-label {
-          font-size: 12px;
-          color: #64748b;
-        }
-
-        .summary-value {
-          font-size: 22px;
-          color: #0f172a;
-        }
-
-        .info-section,
-        .filter-section,
-        .history-section {
-          padding: 20px;
-          background: #ffffff;
-          border-radius: 10px;
-          border: 1px solid #e2e8f0;
-          margin-bottom: 24px;
-        }
-
-        .section-title {
-          font-size: 16px;
-          font-weight: 600;
-          margin-bottom: 16px;
-        }
-
-        .info-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 16px;
-        }
-
-        .info-grid label {
-          font-size: 12px;
-          color: #64748b;
-        }
-
-        .info-grid span {
-          font-size: 14px;
-          font-weight: 500;
-        }
-
-        .filter-section {
-          display: flex;
-          gap: 16px;
-          align-items: flex-end;
-        }
-
-        .filter-group {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .timeline {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-
-        .timeline-row {
-          display: grid;
-          grid-template-columns: 120px 1fr;
-          gap: 16px;
-          padding: 14px;
-          border-radius: 8px;
-          background: #f9fafb;
-        }
-
-        .timeline-date {
-          font-size: 13px;
-          font-weight: 600;
-          color: #475569;
-        }
-
-        .timeline-title {
-          font-weight: 600;
-          margin-bottom: 4px;
-        }
-
-        .timeline-meta,
-        .timeline-pay {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 12px;
-          font-size: 13px;
-          color: #475569;
-        }
-          .filter-section {
-  display: flex;
-  align-items: flex-end;
-  gap: 20px;
-  padding: 16px 20px;
-  margin-bottom: 24px;
-
-  background: linear-gradient(180deg, #ffffff, #f8fafc);
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.filter-group label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-}
-
-.filter-group input {
-  padding: 8px 12px;
-  min-width: 160px;
-
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  background-color: #ffffff;
-
-  font-size: 13px;
-  color: #0f172a;
-
-  transition: all 0.2s ease;
-}
-
-
-
-.filter-group input:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-
-.filter-actions {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-}
-
-.filter-actions .btn {
-  height: 36px;
-  padding: 0 16px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-
-.info-section {
-  padding: 22px 26px;
-  margin-bottom: 28px;
-
-  background: linear-gradient(180deg, #ffffff, #f8fafc);
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.05);
-}
-
-.section-title {
-  margin-bottom: 18px;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: #0f172a;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  row-gap: 18px;
-  column-gap: 40px;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.info-item .label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #475569;
-  white-space: nowrap;
-}
-
-.info-item .value {
-  font-size: 14px;
-  font-weight: 500;
-  color: #0f172a;
-  word-break: break-word;
-}
-
-
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 22px;
-  margin-bottom: 30px;
-}
-
-.summary-box {
-  position: relative;
-  padding: 22px 26px;
-
-  background: linear-gradient(180deg, #ffffff, #f8fafc);
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.06);
-
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-
-
-.summary-label {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: #64748b;
-}
-
-.summary-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-/* Accent line on left */
-.summary-box::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 14px;
-  bottom: 14px;
-  width: 4px;
-  border-radius: 4px;
-  background: linear-gradient(180deg, #3b82f6, #2563eb);
-}
-
-/* Different accent for second card */
-.summary-box:nth-child(2)::before {
-  background: linear-gradient(180deg, #10b981, #059669);
-}
-
-
-      `}</style>
+     
     </div>
   );
 };

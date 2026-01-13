@@ -186,16 +186,7 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
               </NavLink>
             </li>
 
-            <li>
-              <NavLink
-                to="/admin/compliance-documentation" // 👈 your React route
-                className={({ isActive }) =>
-                  `submenu-link ${isActive ? "active-submenu" : ""}`
-                }
-              >
-                Compliance Documentation
-              </NavLink>
-            </li>
+           
           </ul>
         </li>
        {/* Tickets (active) */}
@@ -220,6 +211,16 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
                 }
               >
                 Types
+              </NavLink>
+            </li>
+             <li>
+              <NavLink
+                to="/admin/compliance-documentation" // 👈 your React route
+                className={({ isActive }) =>
+                  `submenu-link ${isActive ? "active-submenu" : ""}`
+                }
+              >
+                Compliance Documentation
               </NavLink>
             </li>
            

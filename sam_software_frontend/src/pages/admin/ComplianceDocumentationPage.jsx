@@ -20,7 +20,7 @@ const getFileUrl = (url) => {
 
 function ComplianceDocumentationPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [openSection, setOpenSection] = useState("organization");
+  const [openSection, setOpenSection] = useState("tickets");
 
   const [tickets, setTickets] = useState([]);
   const [employees, setEmployees] = useState([]);

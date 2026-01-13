@@ -18,7 +18,7 @@ export const getEmployeeMasterData = async (payload = {}) => {
     {
       user_id: userId,
       page: payload.page,
-      page_size: payload.page_size, // 👈 required
+      page_size: payload.page_size,
     }
   );
 
@@ -36,7 +36,7 @@ export const filterEmployeeMasterData = async (payload) => {
       user_id: userId,
       search: payload?.search || "",
       department_name: payload?.department || "",
-      is_active: payload?.is_active || "",   // 🔥 CHANGE HERE
+      is_active: payload?.is_active || "",   
       page: payload?.page || 1,
       page_size: payload?.page_size || 20,
     }
@@ -71,9 +71,11 @@ export const filterEmployeeHistoryData = async (payload) => {
     {
       user_id: userId,
       search: payload?.search || "",
-      status: payload?.status || "",
-      page: payload?.page ,
-      page_size: payload?.page_size ,
+      is_active: payload?.is_active || "", 
+      page: payload?.page || 1,
+      page_size: payload?.page_size || 20,
+      page_size: payload?.page_size || 20,
+
     }
   );
 
@@ -312,4 +314,41 @@ export const PersonalEmploymentHistory = async ({
   );
 
   return data;
+};
+
+
+
+
+
+
+// IMPORT EMPLOYEES FROM EXCEL
+export const importEmployees = async (formData) => {
+  const { data } = await http.post(
+    "/hr/import-employees/",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  return data;
+};
+
+
+
+export const exportEmployeesToExcel = async (formData) => {
+  const response = await http.post(
+    "/hr/export-employees/",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      responseType: "blob",  // Required for Excel download
+    }
+  );
+
+  return response.data; // blob
 };

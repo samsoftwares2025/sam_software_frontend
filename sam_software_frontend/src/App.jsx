@@ -14,7 +14,7 @@ import EmploymentTypePage from "./pages/admin/EmploymentTypePage";
 import AddEmploymentTypePage from "./pages/admin/AddEmploymentTypePage";
 import UpdateEmploymentTypePage from "./pages/admin/UpdateEmploymentTypePage";
 import CompanyRegistrationPage from "./pages/admin/CompanyRegistrationPage";
-import AddEmployee from "./pages/admin/AddEmployee";
+import AddEmployeePage from "./pages/admin/AddEmployee";
 import EmployeeMasterDataPage from "./pages/admin/EmployeeMasterDataPage";
 import EmploymentHistoryPage from "./pages/admin/EmploymentHistoryPage";
 import EmployeeDocumentsPage from "./pages/admin/EmployeeDocumentsPage";
@@ -61,7 +61,7 @@ function App() {
         <Route path="/admin/employment-type" element={<ProtectedRoute><EmploymentTypePage /></ProtectedRoute>} />
         <Route path="/admin/add-employment-type" element={<ProtectedRoute><AddEmploymentTypePage /></ProtectedRoute>} />
         <Route path="/admin/update-employment-type" element={<ProtectedRoute><UpdateEmploymentTypePage /></ProtectedRoute>} />
-        <Route path="/admin/add-employee" element={<ProtectedRoute><AddEmployee /></ProtectedRoute>} />
+        <Route path="/admin/add-employee" element={<ProtectedRoute><AddEmployeePage /></ProtectedRoute>} />
         <Route path="/admin/employee-master" element={<ProtectedRoute><EmployeeMasterDataPage /></ProtectedRoute>}/>
         <Route path="/admin/employment-history" element={<ProtectedRoute><EmploymentHistoryPage /></ProtectedRoute>}/>
         <Route path="/admin/employee-documents" element={<ProtectedRoute><EmployeeDocumentsPage /></ProtectedRoute>}/>

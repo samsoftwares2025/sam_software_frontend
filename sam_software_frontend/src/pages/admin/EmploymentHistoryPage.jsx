@@ -16,8 +16,16 @@ import {
 ================================ */
 const applyClientSideFilters = (rows, search, department, type, status) => {
   return rows.filter((r) => {
-    if (search && !r.name?.toLowerCase().includes(search.toLowerCase()))
-      return false;
+    if (search) {
+      const term = search.toLowerCase();
+      const matches =
+        r.name?.toLowerCase().includes(term) ||
+        r.employee_id?.toLowerCase().includes(term) ||
+        r.phone?.toLowerCase().includes(term);
+
+      if (!matches) return false;
+    }
+
     if (department && r.department !== department) return false;
     if (type && r.employment_type !== type) return false;
     if (status !== "" && String(r.is_active) !== status) return false;
@@ -50,8 +58,8 @@ function EmploymentHistoryPage() {
   const pageSize = 20;
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
- const activeFilter =
-  filterStatus === "" ? "" : filterStatus === "true" ? true : false;
+  const activeFilter =
+    filterStatus === "" ? "" : filterStatus === "true" ? true : false;
 
   const navigate = useNavigate();
 
@@ -76,19 +84,19 @@ function EmploymentHistoryPage() {
       searchTerm || filterDepartment || filterType || filterStatus;
 
     const apiCall = filtersApplied
-  ? filterEmployeeHistoryData({
-      search: searchTerm,
-      status: activeFilter,
-      department: filterDepartment,
-      employment_type: filterType,
-      is_active: activeFilter,
-      page: 1,
-      page_size: 99999,
-    })
-  : getEmployeeHistoryData({
-      page: 1,
-      page_size: 99999,
-    });
+      ? filterEmployeeHistoryData({
+          search: searchTerm,
+          status: activeFilter,
+          department: filterDepartment,
+          employment_type: filterType,
+          is_active: activeFilter,
+          page: 1,
+          page_size: 99999,
+        })
+      : getEmployeeHistoryData({
+          page: 1,
+          page_size: 99999,
+        });
 
     Promise.resolve(apiCall)
       .then((resp) => {
@@ -127,7 +135,14 @@ function EmploymentHistoryPage() {
 
     const start = (page - 1) * pageSize;
     setHistory(filtered.slice(start, start + pageSize));
-  }, [masterHistory, searchTerm, filterDepartment, filterType, filterStatus, page]);
+  }, [
+    masterHistory,
+    searchTerm,
+    filterDepartment,
+    filterType,
+    filterStatus,
+    page,
+  ]);
 
   /* ===============================
      PAGINATION
@@ -156,7 +171,6 @@ function EmploymentHistoryPage() {
   ================================ */
   return (
     <div className="container">
-
       <Sidebar
         isMobileOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -170,13 +184,14 @@ function EmploymentHistoryPage() {
 
         <div className="page-title">
           <h3>Employee Employment History</h3>
-          <p className="subtitle">View and manage employment history records.</p>
+          <p className="subtitle">
+            View and manage employment history records.
+          </p>
         </div>
 
         {/* FILTERS */}
         <div className="filters-container">
           <div className="filters-left">
-
             <div className="search-input">
               <i className="fa-solid fa-magnifying-glass" />
               <input
@@ -212,7 +227,7 @@ function EmploymentHistoryPage() {
               ))}
             </select>
 
-             <select
+            <select
               className="filter-select"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
@@ -221,7 +236,6 @@ function EmploymentHistoryPage() {
               <option value="true">Active</option>
               <option value="false">Inactive</option>
             </select>
-
           </div>
 
           <div className="filters-right">
@@ -237,7 +251,6 @@ function EmploymentHistoryPage() {
 
         {/* TABLE */}
         <div className="table-container">
-
           <div className="table-header-bar">
             <h4>
               Employment History{" "}
@@ -260,7 +273,7 @@ function EmploymentHistoryPage() {
                       <th>Name</th>
                       <th>Employment Type</th>
                       <th>Status</th>
-                      <th>Joining  Date</th>
+                      <th>Joining Date</th>
                       <th>Last Working Date</th>
                       <th>Action</th>
                     </tr>
@@ -276,19 +289,33 @@ function EmploymentHistoryPage() {
                           <td>{row.employee_id}</td>
                           <td>{row.name}</td>
                           <td>{row.employment_type}</td>
-                         <td>
-                          <span className={getStatusClassName(row.is_active)}>
-                            ● {row.is_active ? "Active" : "Inactive"}
-                          </span>
-                        </td>                          <td>{row.joining_date ? new Date(row.joining_date).toLocaleDateString("en-GB") : "-"}</td>
-                          <td>{row.last_working_date ? new Date(row.last_working_date).toLocaleDateString("en-GB") : "-"}</td>
-
+                          <td>
+                            <span className={getStatusClassName(row.is_active)}>
+                              ● {row.is_active ? "Active" : "Inactive"}
+                            </span>
+                          </td>{" "}
+                          <td>
+                            {row.joining_date
+                              ? new Date(row.joining_date).toLocaleDateString(
+                                  "en-GB"
+                                )
+                              : "-"}
+                          </td>
+                          <td>
+                            {row.last_working_date
+                              ? new Date(
+                                  row.last_working_date
+                                ).toLocaleDateString("en-GB")
+                              : "-"}
+                          </td>
                           <td>
                             <div className="table-actions">
                               <button
                                 className="icon-btn view"
                                 onClick={() =>
-                                  navigate(`/admin/view-employment-history/${row.id}`)
+                                  navigate(
+                                    `/admin/view-employment-history/${row.id}`
+                                  )
                                 }
                               >
                                 <i className="fa-solid fa-eye" />
@@ -345,10 +372,8 @@ function EmploymentHistoryPage() {
                   </button>
                 </div>
               </div>
-
             </>
           )}
-
         </div>
       </main>
     </div>
@@ -356,3 +381,4 @@ function EmploymentHistoryPage() {
 }
 
 export default EmploymentHistoryPage;
+  

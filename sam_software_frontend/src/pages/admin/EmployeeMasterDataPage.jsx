@@ -9,9 +9,42 @@ import {
   filterEmployeeMasterData,
   deleteEmployee,
   updateEmployee,
+   exportEmployeesToExcel,
 } from "../../api/admin/employees";
 
+
 function EmployeeMasterDataPage() {
+
+ const [addedBy, setAddedBy] = useState("");
+const [parentId, setParentId] = useState("");
+
+const handleExportExcel = async () => {
+  try {
+    const formData = new FormData();
+    const userId = localStorage.getItem("user_id");
+
+    formData.append("user_id", userId);
+
+    if (addedBy) formData.append("added_by", addedBy);
+    if (parentId) formData.append("parent_id", parentId);
+
+    const blob = await exportEmployeesToExcel(formData);
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "employees_export.xlsx";
+    link.click();
+
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Excel export failed", err);
+    alert("Failed to export Excel.");
+  }
+};
+
+
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
@@ -197,12 +230,20 @@ function EmployeeMasterDataPage() {
         <Header onMenuClick={() => setIsSidebarOpen((p) => !p)} />
         <div className="the_line" />
 
-        <div className="page-title">
-          <h3>Employee Master Data</h3>
-          <p className="subtitle">
-            View, filter and manage all employee records.
-          </p>
-        </div>
+
+
+       <div className="page-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+  <div>
+    <h3>Employee Master Data</h3>
+    <p className="subtitle">
+      View, filter and manage all employee records.
+    </p>
+  </div>
+
+  <button className="btn btn-success" onClick={handleExportExcel}>
+    <i className="fa-solid fa-file-excel"></i> Export Excel
+  </button>
+</div>
 
         {/* FILTERS */}
         <div className="filters-container">

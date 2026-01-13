@@ -2792,3 +2792,505 @@ table.data-table th.wrap {
 .has-error .form-label {
   color: #d93025;
 }
+
+
+
+
+
+/* view employement history */
+
+
+ .summary-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
+          margin-top:2%;
+        }
+
+        .summary-box {
+          padding: 16px;
+          border-radius: 10px;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+        }
+
+        .summary-label {
+          font-size: 12px;
+          color: #64748b;
+        }
+
+        .summary-value {
+          font-size: 22px;
+          color: #0f172a;
+        }
+
+        .info-section,
+        .filter-section,
+        .history-section {
+          padding: 20px;
+          background: #ffffff;
+          border-radius: 10px;
+          border: 1px solid #e2e8f0;
+          margin-bottom: 24px;
+        }
+
+        .section-title {
+          font-size: 16px;
+          font-weight: 600;
+          margin-bottom: 16px;
+        }
+
+        .info-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
+        }
+
+        .info-grid label {
+          font-size: 12px;
+          color: #64748b;
+        }
+
+        .info-grid span {
+          font-size: 14px;
+          font-weight: 500;
+        }
+
+        .filter-section {
+          display: flex;
+          gap: 16px;
+          align-items: flex-end;
+        }
+
+        .filter-group {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+    
+          .filter-section {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.filter-group input {
+  padding: 8px 12px;
+  min-width: 160px;
+
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+
+  font-size: 13px;
+  color: #0f172a;
+
+  transition: all 0.2s ease;
+}
+
+
+
+.filter-group input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.filter-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.filter-actions .btn {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+
+.info-section {
+  padding: 22px 26px;
+  margin-bottom: 28px;
+
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+  margin-bottom: 18px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #0f172a;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  row-gap: 18px;
+  column-gap: 40px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-item .label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.info-item .value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 22px;
+  margin-bottom: 30px;
+}
+
+.summary-box {
+  position: relative;
+  padding: 22px 26px;
+
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.06);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+
+
+.summary-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.summary-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Accent line on left */
+.summary-box::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 4px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #3b82f6, #2563eb);
+}
+
+/* Different accent for second card */
+.summary-box:nth-child(2)::before {
+  background: linear-gradient(180deg, #10b981, #059669);
+}
+
+
+.value.employee-link {
+  color: #007bff !important;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.value.employee-link:hover {
+  text-decoration: underline;
+}
+
+/* CLEAN TIMELINE (NEW DESIGN) */
+
+.timeline-clean {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.history-card {
+  display: flex;
+  gap: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 22px;
+}
+
+.timeline-line {
+  width: 4px;
+  background: #3b82f6;
+  border-radius: 4px;
+}
+
+.history-content {
+  flex: 1;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.history-order {
+  background: #e2e8f0;
+  padding: 4px 10px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.history-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.history-title {
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.title-designation {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.title-department {
+  font-size: 13px;
+  color: #475569;
+  margin-left: 6px;
+}
+
+.history-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #475569;
+  margin-bottom: 10px;
+}
+
+.history-meta strong {
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.history-salary {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #334155;
+}
+
+
+
+
+
+/* Container for the column tick-all row */
+.permission-header-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px;
+  margin-left: 180px; /* aligns perfectly with module names */
+  gap: 40px; /* spacing between View(Add All)… */
+}
+
+/* Row for each module */
+.permission-row {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+}
+
+/* Module name label */
+.permission-row strong {
+  width: 180px;            /* aligns all rows */
+  display: inline-block;
+}
+
+/* Checkbox group inside each row */
+.permission-row label {
+  margin-right: 40px;      /* equal spacing between View / Add / Update / Delete */
+  display: flex;
+  align-items: center;
+  gap: 6px;                /* space between checkbox and label text */
+  font-size: 15px;
+}
+
+/* A little card padding */
+.permissions-container {
+  padding: 15px 20px;
+  border-radius: 10px;
+  border: 1px solid #e5e5e5;
+  background: #fafafa;
+}
+
+
+
+
+.permission-grid {
+  display: grid;
+  grid-template-columns: 200px 120px 120px 120px 120px; 
+  /* Module name | view | add | update | delete */
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.permission-grid-header {
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.permission-grid label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+}
+
+.permission-grid strong {
+  font-size: 15px;
+}
+
+
+
+
+/* import excel modal */
+
+
+/* Wider modal for Import Employees */
+.import-modal-wide {
+  width: 520px !important;
+  max-width: 95%;
+  padding: 25px 30px;
+}
+
+/* Title styling */
+.modal-title {
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+/* Field wrapper */
+.modal-field {
+  margin-bottom: 18px;
+}
+
+/* Label styling */
+.modal-label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* File input styling */
+.modal-input-file {
+  margin-top: 6px;
+  padding: 8px;
+}
+
+/* Buttons area */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+
+/* Wrapper for upload */
+.file-upload-container {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+/* Modern clean button */
+.file-upload-btn {
+  background: #f1f1f1;
+  border: 1px solid #ccc;
+  color: #333;
+  padding: 8px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.file-upload-btn:hover {
+  background: #e6e6e6;
+  border-color: #bbb;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+/* Hide original input */
+.file-upload-btn input {
+  display: none;
+}
+
+/* File name text */
+.file-upload-name {
+  font-size: 14px;
+  color: #444;
+}

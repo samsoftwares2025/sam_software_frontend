@@ -60,6 +60,7 @@ const initialErrorState = {
 
 export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
   const formRef = useRef(null);
+  const [photoFile, setPhotoFile] = useState(null);
 
   const [formErrors, setFormErrors] = useState(initialErrorState);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -117,7 +118,6 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     setSelectedRoleId(initialValues?.user_role_id || "");
     setSelectedParentId(initialValues?.parent_id || "");
     setSelectedIsActive(initialValues?.is_active === true ? "True" : "False");
-
 
     /* ------------------- DOCUMENTS ------------------- */
     if (Array.isArray(initialValues?.documents)) {
@@ -284,14 +284,18 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     }
 
     const formData = new FormData(e.target);
+    // append profile image if uploaded
+ const fileInput = formRef.current.querySelector('input[name="image"]');
+  if (fileInput?.files?.[0]) {
+    formData.append("image", fileInput.files[0]);
+  }
+
     formData.append("parent_id", selectedParentId || "");
     formData.append("employment_type_id", selectedEmploymentType);
     formData.append("department_id", selectedDepartment || "");
     formData.append("designation_id", selectedDesignation || "");
     formData.append("user_role_id", selectedRoleId || "");
     formData.append("is_active", selectedIsActive || "");
-    formData.append("last_working_date", formData.get("last_working_date"));
-
 
     /* ----- DOCS ----- */
     const mappedDocs = documents.map((doc, idx) => ({
@@ -324,7 +328,7 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     );
 
     const res = await onSubmit(formData);
-
+    console.log("RES:", res); // ← CHECK THIS
     if (res?.success) {
       setShowSuccessModal(true);
     }
@@ -340,14 +344,17 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
           personalInfo={personalInfo}
           setPersonalInfo={setPersonalInfo}
           photoPreview={photoPreview}
-          onPhotoChange={(e) =>
-            setPhotoPreview(URL.createObjectURL(e.target.files[0]))
-          }
+          onPhotoChange={(e) => {
+            const file = e.target.files[0];
+            if (file) {
+              setPhotoPreview(URL.createObjectURL(file));
+              setPersonalInfo((prev) => ({ ...prev, image: file })); // <— store file here
+            }
+          }}
           formErrors={formErrors}
           setFormErrors={setFormErrors}
           mode="edit"
         />
-
         <EmploymentSection
           mode="edit"
           initialValues={initialValues}
