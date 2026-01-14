@@ -78,6 +78,8 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
   const [selectedRoleId, setSelectedRoleId] = useState("");
   const [selectedParentId, setSelectedParentId] = useState("");
   const [selectedIsActive, setSelectedIsActive] = useState("");
+  const [selectedIsDepartmentHead, setSelectedIsDepartmentHead] = useState("");
+
 
   const [documents, setDocuments] = useState([]);
   const [experiences, setExperiences] = useState([]);
@@ -118,6 +120,8 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     setSelectedRoleId(initialValues?.user_role_id || "");
     setSelectedParentId(initialValues?.parent_id || "");
     setSelectedIsActive(initialValues?.is_active === true ? "True" : "False");
+    setSelectedIsDepartmentHead(initialValues?.is_department_head === true ? "True" : "False");
+
 
     /* ------------------- DOCUMENTS ------------------- */
     if (Array.isArray(initialValues?.documents)) {
@@ -296,6 +300,7 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
     formData.append("designation_id", selectedDesignation || "");
     formData.append("user_role_id", selectedRoleId || "");
     formData.append("is_active", selectedIsActive || "");
+    formData.append("is_department_head", selectedIsDepartmentHead || "");
 
     /* ----- DOCS ----- */
     const mappedDocs = documents.map((doc, idx) => ({
@@ -370,6 +375,8 @@ export default function UpdateEmployeeForm({ initialValues = {}, onSubmit }) {
           setSelectedParentId={setSelectedParentId}
           selectedIsActive={selectedIsActive}
           setSelectedIsActive={setSelectedIsActive}
+          selectedIsDepartmentHead={selectedIsDepartmentHead}
+          setSelectedIsDepartmentHead={setSelectedIsDepartmentHead}
           formErrors={formErrors}
           setFormErrors={setFormErrors}
         />

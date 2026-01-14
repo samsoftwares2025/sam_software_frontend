@@ -10,40 +10,92 @@ const getUserId = () => {
 /**
  * createRole
  */
-export const createRole = async (role) => {
+export const createRole = async (roleName, permissions) => {
   const userId = getUserId();
 
   const payload = {
-    role,          // ✅ MUST match backend model
+    role: roleName,      // backend expects `role`
     user_id: userId,
+    permissions          // full permission object
   };
 
   const { data } = await http.post(
     "/users/add-user-roles/",
-    payload
+    payload,
+    { headers: { "Content-Type": "application/json" } }
   );
 
   return data;
 };
 
-// src/api/admin/roles.js
-export const updateRole = async (roleId, role) => {
-  const userId = localStorage.getItem("userId");
+
+
+
+/**
+ * getRoles
+ */
+export const getUserRoleById = async (roleId) => {
+  const userId = getUserId();
 
   const payload = {
-    user_role_id: roleId, // ✅ MUST MATCH BACKEND
-    role: role,           // ✅ MUST MATCH BACKEND
     user_id: userId,
+    user_role_id: roleId,
   };
 
   const { data } = await http.post(
-    "/users/update-user-roles/",
-    payload
+    "/users/get-user-roles/",
+    payload,
+    { headers: { "Content-Type": "application/json" } }
   );
 
   return data;
 };
+
+
+export const listUserRoles = async () => {
+  const userId = getUserId();
+
+  const payload = {
+    user_id: userId, // required by backend
+  };
+
+  const { data } = await http.post(
+    "/users/list-user-roles/",
+    payload,
+    { headers: { "Content-Type": "application/json" } }
+  );
+
+  return data;
+};
+
 // src/api/admin/roles.js
+// src/api/admin/roles.js
+export const updateRole = async (roleId, { roleName, permissions }) => {
+  const userId = localStorage.getItem("userId");
+
+  const payload = {
+    user_role_id: roleId,
+    role: roleName,           // ✔ correct string value
+    permissions,              // ✔ correct permissions
+    user_id: userId,
+  };
+
+  try {
+    const { data } = await http.post(
+      "/users/update-user-roles/",
+      payload,
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    return data;
+  } catch (err) {
+    throw err; // pass error back to component
+  }
+};
+
+
+// src/api/admin/roles.js
+
 
 
 // src/api/admin/roles.js
@@ -58,20 +110,3 @@ export const deleteUserRole = async (roleId) => {
   return data;
 };
 
-
-
-
-/**
- * getRoles
- */
-export const getUserRoles = async () => {
-
-  const userId = getUserId();
-
-  const { data } = await http.post(
-    "/users/list-user-roles/",
-    { user_id: userId }
-  );
-
-  return data;
-};

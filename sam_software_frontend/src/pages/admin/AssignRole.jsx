@@ -5,7 +5,7 @@ import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import "../../assets/styles/admin.css";
 
-import { getUserRoles } from "../../api/admin/roles";
+import { listUserRoles } from "../../api/admin/roles";
 import {
   getEmployeeMasterData,
   filterEmployeeMasterData,
@@ -42,7 +42,7 @@ const AssignRole = () => {
   useEffect(() => {
     const loadRole = async () => {
       try {
-        const res = await getUserRoles();
+        const res = await listUserRoles();
         if (res?.success) {
           const role = res.user_roles.find(
             (r) => String(r.id) === String(roleId)

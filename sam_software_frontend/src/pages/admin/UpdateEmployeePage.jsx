@@ -7,10 +7,7 @@ import Header from "../../components/admin/Header";
 import UpdateEmployeeForm from "../../components/admin/employee/UpdateEmployeeForm";
 
 import "../../assets/styles/admin.css";
-import {
-  getEmployeeById,
-  updateEmployee,
-} from "../../api/admin/employees";
+import { getEmployeeById, updateEmployee } from "../../api/admin/employees";
 
 /* SUCCESS MODAL */
 const SuccessModal = ({ onClose }) => (
@@ -29,21 +26,24 @@ const SuccessModal = ({ onClose }) => (
 );
 
 function UpdateEmployeePage() {
+  const [failureMessage, setFailureMessage] = useState("Failed to update employee.");
+
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showFailureModal, setShowFailureModal] = useState(false);
 
-  const FailureModal = ({ onClose }) => (
-    <div className="modal-overlay">
-      <div className="modal-card error">
-        <h2>❌ Update Failed</h2>
-        <p>Failed to update employee. Please try again.</p>
+ const FailureModal = ({ onClose, message }) => (
+  <div className="modal-overlay">
+    <div className="modal-card error">
+      <h2>❌ Update Failed</h2>
+      <p>{message}</p>  {/* SHOW BACKEND ERROR HERE */}
 
-        <button className="btn btn-primary" onClick={onClose}>
-          OK
-        </button>
-      </div>
+      <button className="btn btn-primary" onClick={onClose}>
+        OK
+      </button>
     </div>
-  );
+  </div>
+);
+
 
   const { id } = useParams();
   const navigate = useNavigate();
@@ -103,6 +103,7 @@ function UpdateEmployeePage() {
 
           work_location: emp.work_location ?? "",
           is_active: emp.is_active,
+          is_department_head: emp.is_department_head,
 
           annual_ctc: emp.annual_ctc ?? "",
           basic_salary: emp.basic_salary ?? "",
@@ -133,32 +134,36 @@ function UpdateEmployeePage() {
 
   /* SUBMIT HANDLER */
   const handleFormSubmit = async (formData) => {
-    try {
-      const userId = localStorage.getItem("user_id");
+  try {
+    const userId = localStorage.getItem("user_id");
 
-      if (!userId) {
-        setShowFailureModal(true);
-        return;
-      }
-
-      formData.append("id", Number(id));
-      formData.append("user_id", userId);
-
-      const response = await updateEmployee(formData);
-
-      if (!response?.success) {
-        setShowFailureModal(true);
-        return;
-      }
-
-      // SHOW SUCCESS MODAL instead of navigating immediately
-      setShowSuccessModal(true);
-
-    } catch (err) {
-      console.error("❌ Failed to update employee:", err);
+    if (!userId) {
+      setFailureMessage("User authentication failed.");
       setShowFailureModal(true);
+      return;
     }
-  };
+
+    formData.append("id", Number(id));
+    formData.append("user_id", userId);
+
+    const response = await updateEmployee(formData);
+
+    if (!response?.success) {
+      setFailureMessage(response?.message || "Failed to update employee.");
+      setShowFailureModal(true);
+      return;
+    }
+
+    setShowSuccessModal(true);
+  } catch (err) {
+    console.error("❌ Failed to update employee:", err);
+
+    const backendMsg = err?.response?.data?.message || "Failed to update employee.";
+
+    setFailureMessage(backendMsg);
+    setShowFailureModal(true);
+  }
+};
 
   return (
     <div className="container">
@@ -179,18 +184,28 @@ function UpdateEmployeePage() {
           </div>
         </div>
 
-        {loading && <div style={{ padding: "2rem" }}>Loading employee data...</div>}
-        {!loading && error && <div style={{ padding: "2rem", color: "orange" }}>{error}</div>}
+        {loading && (
+          <div style={{ padding: "2rem" }}>Loading employee data...</div>
+        )}
+        {!loading && error && (
+          <div style={{ padding: "2rem", color: "orange" }}>{error}</div>
+        )}
 
         {!loading && !error && initialValues && (
-          <UpdateEmployeeForm initialValues={initialValues} onSubmit={handleFormSubmit} />
+          <UpdateEmployeeForm
+            initialValues={initialValues}
+            onSubmit={handleFormSubmit}
+          />
         )}
       </main>
 
       {/* FAILURE MODAL */}
-      {showFailureModal && (
-        <FailureModal onClose={() => setShowFailureModal(false)} />
-      )}
+     {showFailureModal && (
+  <FailureModal 
+    onClose={() => setShowFailureModal(false)}
+    message={failureMessage} 
+  />
+)}
 
       {/* SUCCESS MODAL */}
       {showSuccessModal && (

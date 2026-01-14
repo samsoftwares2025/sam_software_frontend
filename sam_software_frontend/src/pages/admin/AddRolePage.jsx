@@ -1,10 +1,11 @@
-import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
 
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import "../../assets/styles/admin.css";
 
+import { list_Permission_modules } from "../../api/admin/permission";
 import { createRole } from "../../api/admin/roles";
 import { useAuth } from "../../context/AuthContext";
 
@@ -32,73 +33,156 @@ function AddRolePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
+  const [modules, setModules] = useState([]); // ["Employee", "Department", ...]
+  const [permissions, setPermissions] = useState({});
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const navigate = useNavigate();
   const { logout } = useAuth();
 
-  /* ================= PERMISSION MODULES ================= */
-  const modules = [
-    "Employee",
-    "Department",
-    "Designation",
-    "Employment Type",
-    "Roles & Permissions",
-    "Policies",
-    "Company Rules",
-    "Supporting Tickets"
-  ];
-
   const permissionTypes = ["view", "add", "update", "delete"];
 
-  const initialPermissionState = modules.reduce((acc, module) => {
-    acc[module] = { view: false, add: false, update: false, delete: false };
-    return acc;
-  }, {});
+  /* ================= FETCH MODULES FROM API ================= */
+  useEffect(() => {
+    const fetchModules = async () => {
+      try {
+        const data = await list_Permission_modules();
 
-  const [permissions, setPermissions] = useState(initialPermissionState);
+        // API returns: { success: true, module_list: [ {id, name}, ... ] }
+        const list = data.module_list || [];
 
-  /* Toggle single checkbox */
+        // Convert objects → string names
+        const names = list.map((m) => m.name);
+
+        setModules(names); // Now modules = ["Employee", "Department", ...]
+      } catch (err) {
+        console.error("Failed to load modules", err);
+      }
+    };
+
+    fetchModules();
+  }, []);
+
+  /* ========== BUILD PERMISSIONS STRUCTURE WHEN MODULES LOAD ========== */
+  useEffect(() => {
+    if (modules.length === 0) return;
+
+    const initial = modules.reduce((acc, name) => {
+      acc[name] = { view: false, add: false, update: false, delete: false };
+      return acc;
+    }, {});
+
+    setPermissions(initial);
+  }, [modules]);
+
+  /* =====================================================
+       UPDATED PERMISSION LOGIC WITH DEPENDENCIES
+     ===================================================== */
   const handlePermissionChange = (module, action) => {
+    const current = permissions[module];
+    let updated = { ...current };
+
+    const isSupport = module === "Supporting Tickets";
+
+    if (action === "view") {
+      updated.view = !updated.view;
+    }
+
+    if (action === "add") {
+      const newValue = !current.add;
+      updated.add = newValue;
+
+      // ❗ NO auto-select rules for Supporting Tickets
+      if (!isSupport && newValue) {
+        updated.view = true;
+        updated.update = true;
+        updated.delete = true;
+      }
+    }
+
+    if (action === "update") {
+      const newValue = !current.update;
+      updated.update = newValue;
+
+      if (!isSupport && newValue) {
+        updated.view = true;
+      }
+    }
+
+    if (action === "delete") {
+      const newValue = !current.delete;
+      updated.delete = newValue;
+
+      if (!isSupport && newValue) {
+        updated.view = true;
+      }
+    }
+
     setPermissions((prev) => ({
       ...prev,
-      [module]: {
-        ...prev[module],
-        [action]: !prev[module][action]
-      }
+      [module]: updated,
     }));
   };
 
-  /* COLUMN: Tick All */
+  /* ===================== COLUMN TICK ALL ===================== */
   const toggleColumn = (action) => {
     const allChecked = modules.every((m) => permissions[m][action]);
-    const updated = modules.reduce((acc, m) => {
-      acc[m] = { ...permissions[m], [action]: !allChecked };
+
+    const updated = modules.reduce((acc, module) => {
+      const isSupport = module === "Supporting Tickets";
+      let state = { ...permissions[module] };
+
+      state[action] = !allChecked;
+
+      if (!isSupport && !allChecked) {
+        if (action === "add") {
+          state.view = true;
+          state.update = true;
+          state.delete = true;
+        }
+        if (action === "update" || action === "delete") {
+          state.view = true;
+        }
+      }
+
+      acc[module] = state;
       return acc;
     }, {});
+
     setPermissions(updated);
   };
 
   const isColumnChecked = (action) =>
-    modules.every((m) => permissions[m][action] === true);
+    modules.every((m) => permissions[m]?.[action] === true);
 
-  /* GLOBAL: Tick All */
+  /* ===================== GLOBAL TICK ALL ===================== */
   const tickAllPermissions = () => {
-    const updated = modules.reduce((acc, m) => {
-      acc[m] = { view: true, add: true, update: true, delete: true };
+    const updated = modules.reduce((acc, module) => {
+      const isSupport = module === "Supporting Tickets";
+
+      acc[module] = isSupport
+        ? { view: false, add: false, update: false, delete: false } // must tick manually
+        : { view: true, add: true, update: true, delete: true };
+
       return acc;
     }, {});
     setPermissions(updated);
   };
 
-  const unTickAllPermissions = () => setPermissions(initialPermissionState);
+  const unTickAllPermissions = () => {
+    const updated = modules.reduce((acc, m) => {
+      acc[m] = { view: false, add: false, update: false, delete: false };
+      return acc;
+    }, {});
+    setPermissions(updated);
+  };
 
   const isAllChecked = modules.every(
     (m) =>
-      permissions[m].view &&
-      permissions[m].add &&
-      permissions[m].update &&
-      permissions[m].delete
+      permissions[m]?.view &&
+      permissions[m]?.add &&
+      permissions[m]?.update &&
+      permissions[m]?.delete
   );
 
   /* ================= SUBMIT FORM ================= */
@@ -114,10 +198,7 @@ function AddRolePage() {
     setError(null);
 
     try {
-      await createRole({
-        roleName: roleName.trim(),
-        permissions
-      });
+      await createRole(roleName.trim(), permissions);
 
       setShowSuccessModal(true);
     } catch (err) {
@@ -193,43 +274,49 @@ function AddRolePage() {
                 </label>
               </div>
 
-              {/* COLUMN TICK ALL */}
-              <div className="permission-grid permission-grid-header">
-                <div></div> {/* empty placeholder */}
+              {/* MODULE LIST */}
+              {modules.length === 0 ? (
+                <p>Loading permission modules...</p>
+              ) : (
+                <>
+                  {/* COLUMN TICK ALL */}
+                  <div className="permission-grid permission-grid-header">
+                    <div></div>
 
-                {permissionTypes.map((action) => (
-                  <label key={action}>
-                    <input
-                      type="checkbox"
-                      checked={isColumnChecked(action)}
-                      onChange={() => toggleColumn(action)}
-                    />
-                    {action.charAt(0).toUpperCase() + action.slice(1)} (All)
-                  </label>
-                ))}
-              </div>
+                    {permissionTypes.map((action) => (
+                      <label key={action}>
+                        <input
+                          type="checkbox"
+                          checked={isColumnChecked(action)}
+                          onChange={() => toggleColumn(action)}
+                        />
+                        {action.charAt(0).toUpperCase() + action.slice(1)} (All)
+                      </label>
+                    ))}
+                  </div>
 
-              {/* MODULE ROWS */}
-              {modules.map((module) => (
-                <div key={module} className="permission-grid">
-                  <strong>{module}</strong>
+                  {/* MODULE ROWS */}
+                  {modules.map((module) => (
+                    <div key={module} className="permission-grid">
+                      <strong>{module}</strong>
 
-                  {permissionTypes.map((action) => (
-                    <label key={action}>
-                      <input
-                        type="checkbox"
-                        checked={permissions[module][action]}
-                        onChange={() =>
-                          handlePermissionChange(module, action)
-                        }
-                      />
-                      {action.charAt(0).toUpperCase() + action.slice(1)}
-                    </label>
+                      {permissionTypes.map((action) => (
+                        <label key={action}>
+                          <input
+                            type="checkbox"
+                            checked={permissions[module]?.[action] || false}
+                            onChange={() =>
+                              handlePermissionChange(module, action)
+                            }
+                          />
+                          {action.charAt(0).toUpperCase() + action.slice(1)}
+                        </label>
+                      ))}
+                    </div>
                   ))}
-                </div>
-              ))}
+                </>
+              )}
 
-              {/* BUTTONS */}
               <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
                 <button type="submit" className="btn btn-primary">
                   {saving ? "Saving..." : "Add Role"}
@@ -249,9 +336,7 @@ function AddRolePage() {
       </div>
 
       {showSuccessModal && (
-        <SuccessModal
-          onOk={() => navigate("/admin/roles-permissions")}
-        />
+        <SuccessModal onOk={() => navigate("/admin/roles-permissions")} />
       )}
     </>
   );

@@ -4,23 +4,19 @@ import Sidebar from "../../components/admin/Sidebar";
 import "../../assets/styles/admin.css";
 import { Link } from "react-router-dom";
 
-import { getUserRoles, deleteUserRole } from "../../api/admin/roles";
+import { listUserRoles, deleteUserRole } from "../../api/admin/roles";
 
 const RolesPermissions = () => {
-  /* ================= SIDEBAR ================= */
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [openSection, setOpenSection] = useState("organization");
 
-  /* ================= DATA ================= */
   const [roles, setRoles] = useState([]);
   const [filteredRoles, setFilteredRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  /* ================= SEARCH ================= */
   const [searchTerm, setSearchTerm] = useState("");
 
-  /* ================= DELETE MODAL ================= */
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
@@ -30,14 +26,15 @@ const RolesPermissions = () => {
   const fetchRoles = async () => {
     setLoading(true);
     setError(null);
+
     try {
-      const res = await getUserRoles();
+      const res = await listUserRoles();
+
       if (res?.success) {
-        const list = res.user_roles || [];
-        setRoles(list);
-        setFilteredRoles(list);
+        setRoles(res.user_roles || []);
+        setFilteredRoles(res.user_roles || []);
       } else {
-        setError("Failed to load roles");
+        setError(res?.message || "Failed to load roles");
       }
     } catch (err) {
       console.error("GET ROLES FAILED:", err);
@@ -51,7 +48,7 @@ const RolesPermissions = () => {
     fetchRoles();
   }, []);
 
-  /* ================= SEARCH HANDLER ================= */
+  /* ================= SEARCH FILTER ================= */
   useEffect(() => {
     if (!searchTerm.trim()) {
       setFilteredRoles(roles);
@@ -65,7 +62,7 @@ const RolesPermissions = () => {
     );
   }, [searchTerm, roles]);
 
-  /* ================= DELETE HANDLERS ================= */
+  /* ================= DELETE HANDLING ================= */
   const openDeleteModal = (role) => {
     setRoleToDelete(role);
     setDeleteError(null);
@@ -87,7 +84,9 @@ const RolesPermissions = () => {
       await deleteUserRole(roleToDelete.id);
 
       setRoles((prev) => prev.filter((r) => r.id !== roleToDelete.id));
-      setFilteredRoles((prev) => prev.filter((r) => r.id !== roleToDelete.id));
+      setFilteredRoles((prev) =>
+        prev.filter((r) => r.id !== roleToDelete.id)
+      );
 
       closeDeleteModal();
     } catch (err) {
@@ -96,6 +95,38 @@ const RolesPermissions = () => {
       setDeleting(false);
     }
   };
+
+  /* ================= MULTILINE DISPLAY ================= */
+  const renderModules = (permissions) => {
+    if (!permissions || permissions.length === 0) return "—";
+
+    return (
+      <div style={{ whiteSpace: "pre-line" }}>
+        {permissions.map((p) => p.module_name).join("\n")}
+      </div>
+    );
+  };
+
+ const renderPermissionSummary = (permissions) => {
+  if (!permissions || permissions.length === 0) return "—";
+
+  return (
+    <div style={{ whiteSpace: "pre-line" }}>
+      {permissions
+        .map((p) => {
+          const perms = [];
+          if (p.view) perms.push("View");
+          if (p.add) perms.push("Add");
+          if (p.update) perms.push("Update");
+          if (p.delete) perms.push("Delete");
+
+          return perms.length > 0 ? perms.join(", ") : "—";
+        })
+        .join("\n")}
+    </div>
+  );
+};
+
 
   return (
     <div className="container">
@@ -109,13 +140,13 @@ const RolesPermissions = () => {
       <main className="main">
         <Header onMenuClick={() => setIsSidebarOpen((p) => !p)} />
 
-        {/* ================= HEADER ================= */}
         <div className="header">
           <div className="page-title">
             <h1>Roles and Permissions</h1>
             <p className="subtitle">Manage user roles dynamically.</p>
           </div>
         </div>
+
         <div className="filters-container">
           <div className="filters-left">
             <div className="search-input">
@@ -135,12 +166,10 @@ const RolesPermissions = () => {
           </div>
 
           <div className="filters-right">
-            {/* REFRESH BUTTON */}
             <button className="btn" onClick={fetchRoles}>
               <i className="fa-solid fa-rotate" /> Refresh
             </button>
 
-            {/* CREATE NEW ROLE */}
             <Link to="/admin/add-role">
               <button className="btn btn-primary">
                 <i className="fa-solid fa-plus" /> Create New Role
@@ -162,8 +191,10 @@ const RolesPermissions = () => {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th style={{ width: "5%" }}>Order No</th>
+                    <th style={{ width: "5%" }}>#</th>
                     <th>Role Name</th>
+                    <th>Modules</th>
+                    <th>Permissions</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -171,7 +202,7 @@ const RolesPermissions = () => {
                 <tbody>
                   {filteredRoles.length === 0 && (
                     <tr>
-                      <td colSpan="4" className="empty-state">
+                      <td colSpan="5" className="empty-state">
                         No roles match your search
                       </td>
                     </tr>
@@ -180,32 +211,32 @@ const RolesPermissions = () => {
                   {filteredRoles.map((role, index) => (
                     <tr key={role.id}>
                       <td style={{ textAlign: "center" }}>{index + 1}</td>
-                      <td className="emp-name">{role.role}</td>
+                      <td>{role.role}</td>
+
+                      {/* MULTILINE MODULES */}
+                      <td>{renderModules(role.permissions_list)}</td>
+
+                      {/* MULTILINE PERMISSIONS */}
+                      <td>{renderPermissionSummary(role.permissions_list)}</td>
 
                       <td>
                         <div className="table-actions">
-                          {/* Assign */}
                           <Link
                             to={`/admin/assign-role/${role.id}`}
                             className="icon-btn add"
-                            title="Assign Users"
                           >
                             <i className="fas fa-user-plus" />
                           </Link>
 
-                          {/* Edit */}
                           <Link
                             to={`/admin/update-role/${role.id}`}
                             className="icon-btn edit"
-                            title="Edit Role"
                           >
                             <i className="fa-solid fa-pen" />
                           </Link>
 
-                          {/* Delete */}
                           <button
                             className="icon-btn delete"
-                            title="Delete Role"
                             onClick={() => openDeleteModal(role)}
                           >
                             <i className="fa-solid fa-trash" />
@@ -221,7 +252,7 @@ const RolesPermissions = () => {
         </section>
       </main>
 
-      {/* ================= DELETE MODAL ================= */}
+      {/* DELETE MODAL */}
       {showDeleteModal && (
         <div className="modal-backdrop" style={backdropStyle}>
           <div className="modal" style={modalStyle}>
@@ -237,16 +268,11 @@ const RolesPermissions = () => {
               </div>
             )}
 
-            <div
-              style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
-            >
-              <button
-                className="btn"
-                onClick={closeDeleteModal}
-                disabled={deleting}
-              >
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button className="btn" onClick={closeDeleteModal}>
                 Cancel
               </button>
+
               <button
                 className="btn btn-danger"
                 onClick={confirmDelete}

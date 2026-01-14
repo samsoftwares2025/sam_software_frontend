@@ -4,7 +4,7 @@ import Select from "react-select";
 
 import { checkUserFieldExists } from "../../../api/admin/checkUserField";
 
-import { getUserRoles, createRole } from "../../../api/admin/roles";
+import { listUserRoles, createRole } from "../../../api/admin/roles";
 import {
   getDepartments,
   createDepartment,
@@ -40,6 +40,9 @@ export default function EmploymentSection({
 
   selectedIsActive,
   setSelectedIsActive,
+
+  selectedIsDepartmentHead,
+  setSelectedIsDepartmentHead,
 
   setFormErrors,
 }) {
@@ -128,7 +131,7 @@ export default function EmploymentSection({
   useEffect(() => {
     const fetchRoles = async () => {
       try {
-        const res = await getUserRoles();
+        const res = await listUserRoles();
         if (res?.success) {
           setRoles(res.user_roles || []);
 
@@ -160,7 +163,7 @@ export default function EmploymentSection({
 
     const res = await createRole(newRoleName.trim());
 
-    const refreshed = await getUserRoles();
+    const refreshed = await listUserRoles();
     if (refreshed?.success) {
       setRoles(refreshed.user_roles || []);
     }
@@ -567,7 +570,21 @@ export default function EmploymentSection({
             </div>
           )}
         </div>
-
+       <div className="form-group">
+         <label className="form-label required">Is Department Head</label>
+       
+         <select
+           className="form-select"
+           value={selectedIsDepartmentHead}
+           onChange={(e) => setSelectedIsDepartmentHead(e.target.value)}
+           required
+         >
+           <option value="">Select Option</option>
+           <option value="True">Yes</option>
+           <option value="False">No</option>
+         </select>
+       </div>
+       
         {/* =================== REPORTING MANAGER (parent_id) =================== */}
         <div className="form-group">
           <label className="form-label">Reporting Manager</label>
@@ -612,7 +629,7 @@ export default function EmploymentSection({
               type="button"
               className="btn btn-secondary"
               onClick={async () => {
-                const res = await getUserRoles();
+                const res = await listUserRoles();
                 if (res?.success) setRoles(res.user_roles || []);
               }}
             >
@@ -647,7 +664,6 @@ export default function EmploymentSection({
             </div>
           )}
         </div>
-
         {/* =================== STATUS (EDIT ONLY) =================== */}
         {mode === "edit" && (
           <div className="form-group">
