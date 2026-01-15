@@ -1,13 +1,16 @@
 // src/api/auth.js
+
 import http from "./http";
 import { setAuth } from "./http";
 
-/* ================= LOGIN ================= */
+/* ===========================================================
+   LOGIN
+   =========================================================== */
 export const loginUser = async (email, password) => {
   const response = await http.post("/users/login/", { email, password });
   const data = response.data;
 
-  // Extract token
+  /* ================= TOKEN ================= */
   const accessToken =
     data.access ||
     data.token ||
@@ -15,63 +18,102 @@ export const loginUser = async (email, password) => {
     data.authToken ||
     data.authentication?.access;
 
-  if (!accessToken) throw new Error("Login succeeded but no access token returned.");
+  if (!accessToken) {
+    throw new Error("Login succeeded but no access token returned.");
+  }
 
-  // Extract user ID
+  /* ================= USER ID ================= */
   const userId = data.user?.id || data.user_id || data.id;
-  if (!userId) throw new Error("Login succeeded but no user ID returned.");
+  if (!userId) {
+    throw new Error("Login succeeded but no user ID returned.");
+  }
 
   /* ================= STORE BASIC AUTH ================= */
   localStorage.setItem("accessToken", accessToken);
   localStorage.setItem("userId", String(userId));
+  localStorage.setItem("userName", data.name || data.user?.name || "");
 
-  if (data.name || data.user?.name)
-    localStorage.setItem("userName", data.name || data.user?.name);
+  /* ================= STORE CLIENT ADMIN ================= */
+  localStorage.setItem(
+    "is_client_admin",
+    data.is_client_admin ? "true" : "false"
+  );
 
-  /* ================= STORE ROLE ID ================= */
+  /* ================= STORE ROLE ================= */
   localStorage.setItem("user_role_id", data.user_role_id || "");
+  localStorage.setItem("user_role", data.user_role || "");
 
-  /* ================= STORE CLIENT ADMIN FLAG ================= */
-  localStorage.setItem("is_client_admin", data.is_client_admin ? "true" : "false");
+  /* ================= SET AUTH HEADER ================= */
+  setAuth({ token: accessToken });
 
-  /* ================= STORE PERMISSIONS ================= */
-  const rawPermissions =
-    data.permissions ||
-    data.user?.permissions ||
-    data.user_permissions ||
-    data.role_permissions ||
-    [];
+  /* ================= GET PERMISSIONS ================= */
+  const permissions = await fetchUserPermissions(userId);
+
+  localStorage.setItem("permissions", JSON.stringify(permissions));
+
+  return {
+    ...data,
+    permissions
+  };
+};
+
+/* ===========================================================
+   FETCH USER PERMISSIONS  (YOUR API)
+   POST /users/user-check-role-permission/
+   =========================================================== */
+export const fetchUserPermissions = async (userId) => {
+  if (!userId) return {};
+
+  const response = await http.post(
+    "/users/user-check-role-permission/",
+    { user_id: userId }
+  );
+
+  const data = response.data;
+
+  const rawPermissions = data.permissions_list || [];
 
   const permissionMap = {};
 
   rawPermissions.forEach((p) => {
-    const moduleName =
-      p.module_name || p.module || p.name || p.moduleName;
+    const clean = p.module_name?.trim().toLowerCase();
+    if (!clean) return;
 
-    if (!moduleName) return;
-
-    const cleanName = moduleName.trim().toLowerCase();
-
-    permissionMap[cleanName] = {
-      view: p.can_view ?? p.view ?? false,
-      add: p.can_add ?? p.add ?? false,
-      update: p.can_update ?? p.update ?? false,
-      delete: p.can_delete ?? p.delete ?? false,
+    permissionMap[clean] = {
+      view: p.view ?? false,
+      add: p.add ?? false,
+      update: p.update ?? false,
+      delete: p.delete ?? false,
     };
   });
 
-  localStorage.setItem("permissions", JSON.stringify(permissionMap));
-
-  // Set axios auth header
-  setAuth({ token: accessToken });
-
-  return {
-    ...data,
-    permissions: permissionMap,
-  };
+  return permissionMap;
 };
 
-/* ================= LOGOUT ================= */
+/* ===========================================================
+   REFRESH PERMISSIONS (LIVE UPDATE)
+   =========================================================== */
+export const refreshUserPermissions = async () => {
+  const userId = localStorage.getItem("userId");
+  const token = localStorage.getItem("accessToken");
+
+  if (!userId || !token) return null;
+
+  try {
+    const newPermissions = await fetchUserPermissions(userId);
+
+    localStorage.setItem("permissions", JSON.stringify(newPermissions));
+
+    return newPermissions;
+  } catch (err) {
+    console.error("Permission refresh failed:", err);
+    return null;
+  }
+};
+
+/* ===========================================================
+   LOGOUT
+   =========================================================== */
 export const logoutUser = async () => {
   try {
     const token = localStorage.getItem("accessToken");
@@ -84,7 +126,7 @@ export const logoutUser = async () => {
   } catch (err) {
     console.error("Logout API error:", err);
   } finally {
-    // Clear everything
+
     localStorage.removeItem("accessToken");
     localStorage.removeItem("userId");
     localStorage.removeItem("userName");

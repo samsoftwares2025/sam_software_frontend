@@ -168,7 +168,18 @@ export const getEmployeesList = async () => {
   return data.users_data || [];
 };
 
+export const getEmployeesList_employee_mgmnt = async () => {
+  const token = localStorage.getItem("accessToken");
+  const userId = localStorage.getItem("user_id");
 
+  const { data } = await http.post("/hr/list-department-heads/", {
+    user_id: userId,
+    page: 1,
+    page_size: 500, // enough for dropdown
+  });
+
+  return data.users_data || [];
+};
 
 // ✅ FETCH EMPLOYEE BY USER ID (NEW & CORRECT)
 export const getEmployeeByUserId = async (targetUserId) => {

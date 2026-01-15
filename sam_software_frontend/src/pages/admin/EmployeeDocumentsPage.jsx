@@ -4,7 +4,7 @@ import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import "../../assets/styles/admin.css";
 
-import { getDepartments } from "../../api/admin/departments";
+import { getDepartments_employee_mgmnt } from "../../api/admin/departments";
 import {
   getEmployeeDocuments,
   filterEmployeeDocuments,
@@ -42,7 +42,7 @@ function EmployeeDocumentsPage() {
      LOAD MASTER DATA
   ================================ */
   useEffect(() => {
-    getDepartments()
+    getDepartments_employee_mgmnt()
       .then((resp) => setDepartments(resp?.departments || []))
       .catch(() => console.error("Failed to load departments"));
   }, []);

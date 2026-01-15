@@ -43,6 +43,21 @@ export const getDesignations = async () => {
   return data;
 };
 
+
+/**
+ * getDesignations while emp management
+ */
+export const getDesignations_employee_mgmnt = async () => {
+  const userId = getUserId();
+
+  const { data } = await http.post(
+    "/hr/list-designations/",
+    { user_id: userId }
+  );
+
+  return data;
+};
+
 /**
  * updateDesignation
  */

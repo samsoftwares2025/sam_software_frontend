@@ -4,20 +4,20 @@ import Select from "react-select";
 
 import { checkUserFieldExists } from "../../../api/admin/checkUserField";
 
-import { listUserRoles, createRole } from "../../../api/admin/roles";
+import { listUserRoles_employee_mgmnt, createRole } from "../../../api/admin/roles";
 import {
-  getDepartments,
+  getDepartments_employee_mgmnt,
   createDepartment,
 } from "../../../api/admin/departments";
 import {
-  getDesignations,
+  getDesignations_employee_mgmnt,
   createDesignation,
 } from "../../../api/admin/designations";
 import {
-  getEmployementTypes,
+  getEmployementTypes_employee_mgmnt,
   createEmployementType,
 } from "../../../api/admin/employement_type";
-import { getEmployeesList } from "../../../api/admin/employees";
+import { getEmployeesList_employee_mgmnt } from "../../../api/admin/employees";
 
 export default function EmploymentSection({
   initialValues = {},
@@ -61,7 +61,7 @@ export default function EmploymentSection({
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const list = await getEmployeesList();
+        const list = await getEmployeesList_employee_mgmnt();
         setEmployees(list);
 
         // Prefill parent_id (edit mode)
@@ -82,7 +82,7 @@ export default function EmploymentSection({
   const [newEmploymentTypeName, setNewEmploymentTypeName] = useState("");
 
   const fetchEmploymentTypes = async () => {
-    const resp = await getEmployementTypes();
+    const resp = await getEmployementTypes_employee_mgmnt();
     const list = Array.isArray(resp?.employment_types)
       ? resp.employment_types
       : Array.isArray(resp)
@@ -131,7 +131,7 @@ export default function EmploymentSection({
   useEffect(() => {
     const fetchRoles = async () => {
       try {
-        const res = await listUserRoles();
+        const res = await listUserRoles_employee_mgmnt();
         if (res?.success) {
           setRoles(res.user_roles || []);
 
@@ -163,7 +163,7 @@ export default function EmploymentSection({
 
     const res = await createRole(newRoleName.trim());
 
-    const refreshed = await listUserRoles();
+    const refreshed = await listUserRoles_employee_mgmnt();
     if (refreshed?.success) {
       setRoles(refreshed.user_roles || []);
     }
@@ -184,7 +184,7 @@ export default function EmploymentSection({
   const [newDesigLabel, setNewDesigLabel] = useState("");
 
   const fetchDepartments = async () => {
-    const res = await getDepartments();
+    const res = await getDepartments_employee_mgmnt();
     const list = Array.isArray(res) ? res : res?.departments || [];
 
     const mapped = list.map((d) => ({ value: d.id, label: d.name }));
@@ -196,7 +196,7 @@ export default function EmploymentSection({
   };
 
   const fetchDesignations = async () => {
-    const res = await getDesignations();
+    const res = await getDesignations_employee_mgmnt();
     const list = Array.isArray(res) ? res : res?.designations || [];
 
     const grouped = {};
@@ -629,7 +629,7 @@ export default function EmploymentSection({
               type="button"
               className="btn btn-secondary"
               onClick={async () => {
-                const res = await listUserRoles();
+                const res = await listUserRoles_employee_mgmnt();
                 if (res?.success) setRoles(res.user_roles || []);
               }}
             >

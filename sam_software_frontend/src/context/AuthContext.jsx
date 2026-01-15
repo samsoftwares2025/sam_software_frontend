@@ -1,40 +1,114 @@
-//src/context/AuthContext.jsx
+// src/context/AuthContext.jsx
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { refreshUserPermissions } from "../api/auth";
 import { setAuth } from "../api/http";
 
-const AuthContext = createContext(undefined);
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    !!localStorage.getItem("accessToken")
+  );
+
+  const [permissions, setPermissions] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("permissions")) || {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [isClientAdmin, setIsClientAdmin] = useState(
+    localStorage.getItem("is_client_admin") === "true"
+  );
+
   const [isLoading, setIsLoading] = useState(true);
 
+  /* ===========================================================
+      RUN ON EVERY PAGE RELOAD
+    =========================================================== */
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
-    if (token) {
-      setAuth({ token });
-      setIsAuthenticated(true);
+
+    if (!token) {
+      setIsAuthenticated(false);
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
+
+    // ✔ Restore axios auth header on reload
+    setAuth({ token });
+
+    setIsAuthenticated(true);
+    setIsClientAdmin(localStorage.getItem("is_client_admin") === "true");
+
+    const loadPermissions = async () => {
+      try {
+        const newPermissions = await refreshUserPermissions();
+        if (newPermissions) {
+          setPermissions(newPermissions);
+        }
+      } catch (err) {
+        console.error("Permission refresh failed:", err);
+      }
+
+      setIsLoading(false);
+    };
+
+    loadPermissions();
   }, []);
 
-  const login = () => setIsAuthenticated(true);
+  /* ===========================================================
+      METHOD: CALL THIS IMMEDIATELY AFTER loginUser()
+    =========================================================== */
+  const setLoginData = () => {
+    const token = localStorage.getItem("accessToken");
 
+    // ✔ Set axios header after login
+    setAuth({ token });
+
+    setIsAuthenticated(true);
+    setIsClientAdmin(localStorage.getItem("is_client_admin") === "true");
+
+    setPermissions(JSON.parse(localStorage.getItem("permissions")) || {});
+  };
+
+  /* ===========================================================
+      DEPRECATED IN NEW VERSION BUT STILL SUPPORTED
+      (Some pages might still call login())
+    =========================================================== */
+  const login = () => {
+    setLoginData(); // simply forward to main function
+  };
+
+  /* ===========================================================
+      LOGOUT
+    =========================================================== */
   const logout = () => {
     localStorage.clear();
     setAuth(null);
+
     setIsAuthenticated(false);
+    setPermissions({});
+    setIsClientAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        permissions,
+        isClientAdmin,
+        isLoading,
+        setLoginData,
+        login,      // ✔ keep backward compatibility
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
-  return ctx;
-};
+export const useAuth = () => useContext(AuthContext);

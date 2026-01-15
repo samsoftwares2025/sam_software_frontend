@@ -42,6 +42,22 @@ export const getDepartments = async () => {
   return data;
 };
 
+
+/**
+ * getDepartments while emp management
+ */
+export const getDepartments_employee_mgmnt = async () => {
+
+  const userId = getUserId();
+
+  const { data } = await http.post(
+    "/hr/list-departments/",
+    { user_id: userId }
+  );
+
+  return data;
+};
+
 /**
  * updateDepartment
  */

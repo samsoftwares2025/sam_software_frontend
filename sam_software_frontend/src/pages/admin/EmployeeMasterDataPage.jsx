@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import "../../assets/styles/admin.css";
-import { getDepartments } from "../../api/admin/departments";
+import { getDepartments_employee_mgmnt } from "../../api/admin/departments";
 import {
   getEmployeeMasterData,
   filterEmployeeMasterData,
@@ -74,7 +74,7 @@ const handleExportExcel = async () => {
      LOAD DEPARTMENTS (MASTER DATA)
   ============================== */
   useEffect(() => {
-    getDepartments()
+    getDepartments_employee_mgmnt()
       .then((resp) => {
         // backend usually returns { departments: [...] }
         setDepartments(resp?.departments || []);

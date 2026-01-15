@@ -4,8 +4,8 @@ import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
 import "../../assets/styles/admin.css";
 
-import { getDepartments } from "../../api/admin/departments";
-import { getEmployementTypes } from "../../api/admin/employement_type";
+import { getDepartments_employee_mgmnt } from "../../api/admin/departments";
+import { getEmployementTypes_employee_mgmnt } from "../../api/admin/employement_type";
 import {
   getEmployeeHistoryData,
   filterEmployeeHistoryData,
@@ -41,6 +41,9 @@ function EmploymentHistoryPage() {
   const [history, setHistory] = useState([]); // PAGINATED DATA
   const getStatusClassName = (isActive) =>
     isActive ? "status-pill status-active" : "status-pill status-inactive";
+    const handleAddEmployee = () => {
+    navigate("/admin/add-employee");
+  };
   // master data
   const [departments, setDepartments] = useState([]);
   const [employmentTypes, setEmploymentTypes] = useState([]);
@@ -67,8 +70,8 @@ function EmploymentHistoryPage() {
      LOAD MASTER DATA
   ================================ */
   useEffect(() => {
-    getDepartments().then((resp) => setDepartments(resp?.departments || []));
-    getEmployementTypes().then((resp) =>
+    getDepartments_employee_mgmnt().then((resp) => setDepartments(resp?.departments || []));
+    getEmployementTypes_employee_mgmnt().then((resp) =>
       setEmploymentTypes(resp?.employment_types || resp || [])
     );
   }, []);
@@ -243,7 +246,7 @@ function EmploymentHistoryPage() {
               <i className="fa-solid fa-filter-circle-xmark" /> Clear Filters
             </button>
 
-            <button className="btn btn-primary">
+            <button className="btn btn-primary" onClick={handleAddEmployee}>
               <i className="fa-solid fa-user-plus" /> Add Employee
             </button>
           </div>

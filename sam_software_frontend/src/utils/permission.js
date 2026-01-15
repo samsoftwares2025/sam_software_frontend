@@ -4,12 +4,17 @@ export function hasPermission(permissions, module, action = "view") {
   // 👑 Client Admin → full access
   if (isClientAdmin) return true;
 
-  if (!permissions) return false;
+  if (!permissions || !module) return false;
 
-  // normalize module name to match backend mapping
-  const cleanModule = module.trim().toLowerCase();
+  // Normalize module name (case-insensitive)
+  const cleanModule = String(module).trim().toLowerCase();
 
-  if (!permissions[cleanModule]) return false;
+  const modulePerms = permissions?.[cleanModule];
+  if (!modulePerms) return false;
 
-  return permissions[cleanModule][action] === true;
+  // Normalize action too (avoid typo issues)
+  const cleanAction = String(action).trim().toLowerCase();
+
+  // Return permission or false if undefined
+  return modulePerms[cleanAction] === true;
 }

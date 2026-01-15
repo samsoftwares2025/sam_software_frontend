@@ -74,6 +74,7 @@ export default function AddEmployeeForm({ onSubmit }) {
   const [selectedDesignation, setSelectedDesignation] = useState("");
   const [selectedRoleId, setSelectedRoleId] = useState("");
   const [selectedParentId, setSelectedParentId] = useState("");
+  const [selectedIsDepartmentHead, setSelectedIsDepartmentHead] = useState("");
 
   /* ================= DOCUMENTS ================= */
   const emptyDocument = {
@@ -122,7 +123,7 @@ export default function AddEmployeeForm({ onSubmit }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // If any duplicate error exists → show error modal
+    // Check for duplicate field errors
     const hasErrors = Object.values(formErrors).some(
       (err) => err && err.length > 0
     );
@@ -140,6 +141,7 @@ export default function AddEmployeeForm({ onSubmit }) {
     formData.append("department_id", selectedDepartment || "");
     formData.append("designation_id", selectedDesignation || "");
     formData.append("user_role_id", selectedRoleId || "");
+    formData.append("is_department_head", selectedIsDepartmentHead || "");
 
     /* DOCUMENTS */
     const mappedDocs = documents.map((doc, idx) => ({
@@ -161,14 +163,15 @@ export default function AddEmployeeForm({ onSubmit }) {
       });
     });
 
-    /* EXPERIENCE — clean */
+    /* EXPERIENCE */
     const cleanedExperience = experiences
-      .filter((exp) =>
-        exp.company_name?.trim() ||
-        exp.job_title?.trim() ||
-        exp.start_date ||
-        exp.end_date ||
-        exp.responsibilities?.trim()
+      .filter(
+        (exp) =>
+          exp.company_name?.trim() ||
+          exp.job_title?.trim() ||
+          exp.start_date ||
+          exp.end_date ||
+          exp.responsibilities?.trim()
       )
       .map((exp) => ({
         company_name: exp.company_name || "",
@@ -204,6 +207,7 @@ export default function AddEmployeeForm({ onSubmit }) {
     setSelectedDesignation("");
     setSelectedRoleId("");
     setSelectedParentId("");
+    setSelectedIsDepartmentHead("");
 
     setDocuments([emptyDocument]);
     setExperiences([emptyExperience]);
@@ -251,6 +255,9 @@ export default function AddEmployeeForm({ onSubmit }) {
 
           selectedParentId={selectedParentId}
           setSelectedParentId={setSelectedParentId}
+
+          selectedIsDepartmentHead={selectedIsDepartmentHead}
+          setSelectedIsDepartmentHead={setSelectedIsDepartmentHead}
 
           setFormErrors={setFormErrors}
         />
@@ -313,8 +320,8 @@ export default function AddEmployeeForm({ onSubmit }) {
               )
             )
           }
-          onRemoveDocument={(index) =>
-            setDocuments((prev) => prev.filter((_, i) => i !== index))
+          onRemoveDocument={(idx) =>
+            setDocuments((prev) => prev.filter((_, i) => i !== idx))
           }
         />
 

@@ -1,25 +1,48 @@
-// Sidebar.jsx
-import React from "react";
+import React, { useState } from "react";
 import { logoutUser } from "../../api/auth";
 import { NavLink, useNavigate } from "react-router-dom";
+import { refreshUserPermissions } from "../../api/auth";
+// 🔥 ADDED
+import { useAuth } from "../../context/AuthContext";
+
+/* ================= PERMISSION MODAL ================= */
+const NoPermissionModal = ({ onClose }) => (
+  <div className="modal-overlay small-modal">
+    <div className="modal-card">
+      <h3>No Permission</h3>
+      <p>You do not have permission to access this module.</p>
+      <button className="btn btn-primary" onClick={onClose}>
+        OK
+      </button>
+    </div>
+  </div>
+);
 
 function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
   const navigate = useNavigate();
 
+  // 🔥 ADDED
+  const { setLoginData, isClientAdmin } = useAuth();
+
   /* ================= PERMISSIONS ================= */
   const permissions = JSON.parse(localStorage.getItem("permissions") || "{}");
-  const isClientAdmin = localStorage.getItem("is_client_admin") === "true";
 
   const canView = (module) => {
-    if (isClientAdmin) return true; // FULL ACCESS for client admin
-    return permissions?.[module]?.view === true;
+    if (isClientAdmin) return true;
+    const clean = module.trim().toLowerCase();
+    return permissions?.[clean]?.view === true;
   };
+
+  /* ================= NO PERMISSION MODAL ================= */
+  const [showNoPermission, setShowNoPermission] = useState(false);
+  const openNoPermission = () => setShowNoPermission(true);
 
   /* ================= USER DATA ================= */
   const userName = localStorage.getItem("userName") || "User";
   const userImage = localStorage.getItem("userImage");
   const companyName = localStorage.getItem("companyName") || "Company";
   const companyLogo = localStorage.getItem("companyLogo");
+  const userRole = localStorage.getItem("user_role") ;
 
   const initials = userName
     .split(" ")
@@ -37,6 +60,50 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
     setOpenSection((prev) => (prev === sectionId ? null : sectionId));
   };
 
+  /* ================= WRAPPER FOR LINKS ================= */
+  // 🔥 FULLY UPDATED LINK CHECKER — WITHOUT REMOVING ANY OLD CODE
+  const ProtectedLink = ({ required, to, children }) => {
+    const cleanModule = required.trim().toLowerCase();
+
+    const handleClick = async (e) => {
+      e.preventDefault(); // stop default navigation
+
+      // 🔥 Client Admin always bypasses
+      if (isClientAdmin) {
+        navigate(to);
+        return;
+      }
+
+      // 🔥 LIVE refresh permissions before navigating
+      const newPermissions = await refreshUserPermissions();
+
+      if (newPermissions) {
+        localStorage.setItem("permissions", JSON.stringify(newPermissions));
+        setLoginData(); // update React state
+      }
+
+      const hasAccess = newPermissions?.[cleanModule]?.view === true;
+
+      if (hasAccess) {
+        navigate(to);
+      } else {
+        setShowNoPermission(true);
+      }
+    };
+
+    return (
+      <NavLink
+        to={to}
+        onClick={handleClick} // 🔥 ADDED
+        className={({ isActive }) =>
+          `submenu-link ${isActive ? "active-submenu" : ""}`
+        }
+      >
+        {children}
+      </NavLink>
+    );
+  };
+
   return (
     <aside
       className={`sidebar ${isMobileOpen ? "mobile-open mobile-visible" : ""}`}
@@ -44,7 +111,7 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
     >
       {/* COMPANY LOGO */}
       <div className="logo-container">
-        <a href="#" className="logo">
+        <a className="logo">
           <div className="logo-icon">
             {companyLogo ? (
               <img
@@ -64,7 +131,7 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
 
         {/* ================= DASHBOARD ================= */}
         <li className="nav-item">
-          <a href="index.html" className="nav-link">
+          <a href="/admin" className="nav-link">
             <span className="nav-icon">
               <i className="fa-solid fa-chart-line" />
             </span>
@@ -73,186 +140,141 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
         </li>
 
         {/* ================= EMPLOYEES ================= */}
-        {canView("Employees") && (
-          <li className={navHasSubmenu("employees")}>
-            <button
-              className="nav-toggle"
-              aria-expanded={openSection === "employees"}
-              onClick={() => handleSectionToggle("employees")}
-            >
-              <span className="nav-icon">
-                <i className="fa-solid fa-users" />
-              </span>
-              <span className="nav-text">Employees</span>
-              <span className="nav-caret">▸</span>
-            </button>
+        <li className={navHasSubmenu("employees")}>
+          <button
+            className="nav-toggle"
+            aria-expanded={openSection === "employees"}
+            onClick={() => handleSectionToggle("employees")}
+          >
+            <span className="nav-icon">
+              <i className="fa-solid fa-users" />
+            </span>
+            <span className="nav-text">Employees</span>
+            <span className="nav-caret">▸</span>
+          </button>
 
-            <ul className="submenu" aria-hidden={submenuHidden("employees")}>
-              <li>
-                <NavLink
-                  to="/admin/employee-master"
-                  className={({ isActive }) =>
-                    `submenu-link ${isActive ? "active-submenu" : ""}`
-                  }
-                >
-                  Master Data
-                </NavLink>
-              </li>
+          <ul className="submenu" aria-hidden={submenuHidden("employees")}>
+            <li>
+              <ProtectedLink required="employee" to="/admin/employee-master">
+                Master Data
+              </ProtectedLink>
+            </li>
 
-              <li>
-                <NavLink
-                  to="/admin/employment-history"
-                  className={({ isActive }) =>
-                    `submenu-link ${isActive ? "active-submenu" : ""}`
-                  }
-                >
-                  History
-                </NavLink>
-              </li>
+            <li>
+              <ProtectedLink
+                required="employee"
+                to="/admin/employment-history"
+              >
+                History
+              </ProtectedLink>
+            </li>
 
-              <li>
-                <NavLink
-                  to="/admin/employee-documents"
-                  className={({ isActive }) =>
-                    `submenu-link ${isActive ? "active-submenu" : ""}`
-                  }
-                >
-                  Documents
-                </NavLink>
-              </li>
-            </ul>
-          </li>
-        )}
+            <li>
+              <ProtectedLink
+                required="employee"
+                to="/admin/employee-documents"
+              >
+                Documents
+              </ProtectedLink>
+            </li>
+          </ul>
+        </li>
 
         {/* ================= ORGANIZATION ================= */}
-        {canView("Organization") && (
-          <li className={navHasSubmenu("organization")}>
-            <button
-              className="nav-toggle"
-              aria-expanded={openSection === "organization"}
-              onClick={() => handleSectionToggle("organization")}
-            >
-              <span className="nav-icon">
-                <i className="fa-solid fa-building" />
-              </span>
-              <span className="nav-text">Organization</span>
-              <span className="nav-caret">▸</span>
-            </button>
+        <li className={navHasSubmenu("organization")}>
+          <button
+            className="nav-toggle"
+            aria-expanded={openSection === "organization"}
+            onClick={() => handleSectionToggle("organization")}
+          >
+            <span className="nav-icon">
+              <i className="fa-solid fa-building" />
+            </span>
+            <span className="nav-text">Organization</span>
+            <span className="nav-caret">▸</span>
+          </button>
 
-            <ul className="submenu" aria-hidden={submenuHidden("organization")}>
-              <li>
-                <NavLink
-                  to="/admin/departments"
-                  className={({ isActive }) =>
-                    `submenu-link ${isActive ? "active-submenu" : ""}`
-                  }
-                >
-                  Departments
-                </NavLink>
-              </li>
+          <ul className="submenu" aria-hidden={submenuHidden("organization")}>
+            <li>
+              <ProtectedLink required="department" to="/admin/departments">
+                Departments
+              </ProtectedLink>
+            </li>
 
-              <li>
-                <NavLink
-                  to="/admin/designations"
-                  className={({ isActive }) =>
-                    `submenu-link ${isActive ? "active-submenu" : ""}`
-                  }
-                >
-                  Designations
-                </NavLink>
-              </li>
+            <li>
+              <ProtectedLink required="designation" to="/admin/designations">
+                Designations
+              </ProtectedLink>
+            </li>
 
-              <li>
-                <NavLink
-                  to="/admin/employment-type"
-                  className={({ isActive }) =>
-                    `submenu-link ${isActive ? "active-submenu" : ""}`
-                  }
-                >
-                  Employment Type
-                </NavLink>
-              </li>
+            <li>
+              <ProtectedLink
+                required="employment type"
+                to="/admin/employment-type"
+              >
+                Employment Type
+              </ProtectedLink>
+            </li>
 
-              {canView("Roles & Permissions") && (
-                <li>
-                  <NavLink
-                    to="/admin/roles-permissions"
-                    className={({ isActive }) =>
-                      `submenu-link ${isActive ? "active-submenu" : ""}`
-                    }
-                  >
-                    Roles & Permissions
-                  </NavLink>
-                </li>
-              )}
+            <li>
+              <ProtectedLink
+                required="roles & permissions"
+                to="/admin/roles-permissions"
+              >
+                Roles & Permissions
+              </ProtectedLink>
+            </li>
 
-              <li>
-                <NavLink
-                  to="/admin/policies"
-                  className={({ isActive }) =>
-                    `submenu-link ${isActive ? "active-submenu" : ""}`
-                  }
-                >
-                  Policies
-                </NavLink>
-              </li>
+            <li>
+              <ProtectedLink required="policies" to="/admin/policies">
+                Policies
+              </ProtectedLink>
+            </li>
 
-              <li>
-                <NavLink
-                  to="/admin/company-rules"
-                  className={({ isActive }) =>
-                    `submenu-link ${isActive ? "active-submenu" : ""}`
-                  }
-                >
-                  Company Rules
-                </NavLink>
-              </li>
-            </ul>
-          </li>
-        )}
+            <li>
+              <ProtectedLink
+                required="company rules"
+                to="/admin/company-rules"
+              >
+                Company Rules
+              </ProtectedLink>
+            </li>
+          </ul>
+        </li>
 
         {/* ================= SUPPORT TICKETS ================= */}
-        {canView("Tickets") && (
-          <li className={navHasSubmenu("tickets")}>
-            <button
-              className="nav-toggle"
-              aria-expanded={openSection === "tickets"}
-              onClick={() => handleSectionToggle("tickets")}
-            >
-              <span className="nav-icon">
-                <i className="fa-solid fa-ticket" />
-              </span>
-              <span className="nav-text">Supporting Tickets</span>
-              <span className="nav-caret">▸</span>
-            </button>
+        <li className={navHasSubmenu("tickets")}>
+          <button
+            className="nav-toggle"
+            aria-expanded={openSection === "tickets"}
+            onClick={() => handleSectionToggle("tickets")}
+          >
+            <span className="nav-icon">
+              <i className="fa-solid fa-ticket" />
+            </span>
+            <span className="nav-text">Supporting Tickets</span>
+            <span className="nav-caret">▸</span>
+          </button>
 
-            <ul className="submenu" aria-hidden={submenuHidden("tickets")}>
-              <li>
-                <NavLink
-                  to="/admin/ticket-types"
-                  className={({ isActive }) =>
-                    `submenu-link ${isActive ? "active-submenu" : ""}`
-                  }
-                >
-                  Types
-                </NavLink>
-              </li>
+          <ul className="submenu" aria-hidden={submenuHidden("tickets")}>
+            <li>
+              <ProtectedLink required="ticket type" to="/admin/ticket-types">
+                Types
+              </ProtectedLink>
+            </li>
 
-              <li>
-                <NavLink
-                  to="/admin/compliance-documentation"
-                  className={({ isActive }) =>
-                    `submenu-link ${isActive ? "active-submenu" : ""}`
-                  }
-                >
-                  Compliance Documentation
-                </NavLink>
-              </li>
-            </ul>
-          </li>
-        )}
+            <li>
+              <ProtectedLink
+                required="supporting tickets"
+                to="/admin/compliance-documentation"
+              >
+                Compliance Documentation
+              </ProtectedLink>
+            </li>
+          </ul>
+        </li>
 
-        {/* ================= RECRUITMENT (No permission system yet) ================= */}
+        {/* ================= RECRUITMENT ================= */}
         <li className={navHasSubmenu("recruitment")}>
           <button
             className="nav-toggle"
@@ -262,16 +284,17 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
             <span className="nav-icon">
               <i className="fa-solid fa-user-tie" />
             </span>
-            <span className="nav-text">Recruitment &amp; ATS</span>
+            <span className="nav-text">Recruitment & ATS</span>
             <span className="nav-caret">▸</span>
           </button>
+
           <ul className="submenu" aria-hidden={submenuHidden("recruitment")}>
-            <li><a className="submenu-link">Job Management</a></li>
-            <li><a className="submenu-link">Candidate Management</a></li>
-            <li><a className="submenu-link">Interview Management</a></li>
-            <li><a className="submenu-link">Offer &amp; Hiring</a></li>
-            <li><a className="submenu-link">Onboarding</a></li>
-            <li><a className="submenu-link">Offboarding</a></li>
+            <li><button className="submenu-link no-permission" onClick={openNoPermission}>Job Management</button></li>
+            <li><button className="submenu-link no-permission" onClick={openNoPermission}>Candidate Management</button></li>
+            <li><button className="submenu-link no-permission" onClick={openNoPermission}>Interview Management</button></li>
+            <li><button className="submenu-link no-permission" onClick={openNoPermission}>Offer & Hiring</button></li>
+            <li><button className="submenu-link no-permission" onClick={openNoPermission}>Onboarding</button></li>
+            <li><button className="submenu-link no-permission" onClick={openNoPermission}>Offboarding</button></li>
           </ul>
         </li>
 
@@ -289,10 +312,10 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
             <span className="nav-caret">▸</span>
           </button>
           <ul className="submenu" aria-hidden={submenuHidden("attendance")}>
-            <li><a className="submenu-link">Attendance</a></li>
-            <li><a className="submenu-link">Leave</a></li>
-            <li><a className="submenu-link">Timesheets</a></li>
-            <li><a className="submenu-link">Shift Management</a></li>
+            <li><button className="submenu-link">Attendance</button></li>
+            <li><button className="submenu-link">Leave</button></li>
+            <li><button className="submenu-link">Timesheets</button></li>
+            <li><button className="submenu-link">Shift Management</button></li>
           </ul>
         </li>
 
@@ -309,16 +332,15 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
             <span className="nav-text">Payroll Management</span>
             <span className="nav-caret">▸</span>
           </button>
-        <ul className="submenu" aria-hidden={submenuHidden("payroll")}>
-  <li><a className="submenu-link">Payroll Setup</a></li>
-  <li><a className="submenu-link">Payroll Processing</a></li>
-  <li><a className="submenu-link">Payroll Output</a></li>
-  <li><a className="submenu-link">Compliance</a></li>
-</ul>
-
+          <ul className="submenu" aria-hidden={submenuHidden("payroll")}>
+            <li><button className="submenu-link">Payroll Setup</button></li>
+            <li><button className="submenu-link">Payroll Processing</button></li>
+            <li><button className="submenu-link">Payroll Output</button></li>
+            <li><button className="submenu-link">Compliance</button></li>
+          </ul>
         </li>
 
-     {/* ================= PERFORMANCE ================= */}
+        {/* ================= PERFORMANCE ================= */}
         <li className={navHasSubmenu("performance")}>
           <button
             className="nav-toggle"
@@ -328,14 +350,13 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
             <span className="nav-icon">
               <i className="fa-solid fa-chart-pie" />
             </span>
-            <span className="nav-text">Performance &amp; Appraisals</span>
+            <span className="nav-text">Performance & Appraisals</span>
             <span className="nav-caret">▸</span>
           </button>
-         <ul className="submenu" aria-hidden={submenuHidden("performance")}>
-
-            <li><a className="submenu-link">Goal &amp; KPI Management</a></li>
-            <li><a className="submenu-link">Assessment</a></li>
-            <li><a className="submenu-link">Appraisal Cycles</a></li>
+          <ul className="submenu" aria-hidden={submenuHidden("performance")}>
+            <li><button className="submenu-link">Goal & KPI Management</button></li>
+            <li><button className="submenu-link">Assessment</button></li>
+            <li><button className="submenu-link">Appraisal Cycles</button></li>
           </ul>
         </li>
 
@@ -349,14 +370,13 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
             <span className="nav-icon">
               <i className="fa-solid fa-graduation-cap" />
             </span>
-            <span className="nav-text">Learning &amp; Development</span>
+            <span className="nav-text">Learning & Development</span>
             <span className="nav-caret">▸</span>
           </button>
           <ul className="submenu" aria-hidden={submenuHidden("learning")}>
-
-            <li><a className="submenu-link">Training Management</a></li>
-            <li><a className="submenu-link">e-Learning</a></li>
-            <li><a className="submenu-link">Skill Development</a></li>
+            <li><button className="submenu-link">Training Management</button></li>
+            <li><button className="submenu-link">e-Learning</button></li>
+            <li><button className="submenu-link">Skill Development</button></li>
           </ul>
         </li>
 
@@ -374,9 +394,9 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
             <span className="nav-caret">▸</span>
           </button>
           <ul className="submenu" aria-hidden={submenuHidden("engagement")}>
-            <li><a className="submenu-link">Surveys &amp; Feedback</a></li>
-            <li><a className="submenu-link">Recognition</a></li>
-            <li><a className="submenu-link">Communication</a></li>
+            <li><button className="submenu-link">Surveys & Feedback</button></li>
+            <li><button className="submenu-link">Recognition</button></li>
+            <li><button className="submenu-link">Communication</button></li>
           </ul>
         </li>
 
@@ -390,12 +410,12 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
             <span className="nav-icon">
               <i className="fa-solid fa-sitemap" />
             </span>
-            <span className="nav-text">Talent &amp; Succession Planning</span>
+            <span className="nav-text">Talent & Succession Planning</span>
             <span className="nav-caret">▸</span>
           </button>
           <ul className="submenu" aria-hidden={submenuHidden("talent")}>
-            <li><a className="submenu-link">Competency Framework</a></li>
-            <li><a className="submenu-link">Succession Planning</a></li>
+            <li><button className="submenu-link">Competency Framework</button></li>
+            <li><button className="submenu-link">Succession Planning</button></li>
           </ul>
         </li>
 
@@ -409,14 +429,14 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
             <span className="nav-icon">
               <i className="fa-solid fa-gift" />
             </span>
-            <span className="nav-text">Benefits &amp; Compensation</span>
+            <span className="nav-text">Benefits & Compensation</span>
             <span className="nav-caret">▸</span>
           </button>
           <ul className="submenu" aria-hidden={submenuHidden("benefits")}>
-            <li><a className="submenu-link">Health &amp; Insurance Plans</a></li>
-            <li><a className="submenu-link">Allowance Policies</a></li>
-            <li><a className="submenu-link">Bonus Planning</a></li>
-            <li><a className="submenu-link">Increment Budgeting</a></li>
+            <li><button className="submenu-link">Health & Insurance Plans</button></li>
+            <li><button className="submenu-link">Allowance Policies</button></li>
+            <li><button className="submenu-link">Bonus Planning</button></li>
+            <li><button className="submenu-link">Increment Budgeting</button></li>
           </ul>
         </li>
 
@@ -434,9 +454,9 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
             <span className="nav-caret">▸</span>
           </button>
           <ul className="submenu" aria-hidden={submenuHidden("expense")}>
-            <li><a className="submenu-link">Expense Category</a></li>
-            <li><a className="submenu-link">Expenses</a></li>
-            <li><a className="submenu-link">Expense Claims</a></li>
+            <li><button className="submenu-link">Expense Category</button></li>
+            <li><button className="submenu-link">Expenses</button></li>
+            <li><button className="submenu-link">Expense Claims</button></li>
           </ul>
         </li>
 
@@ -454,8 +474,8 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
             <span className="nav-caret">▸</span>
           </button>
           <ul className="submenu" aria-hidden={submenuHidden("asset")}>
-            <li><a className="submenu-link">Fixed Assets</a></li>
-            <li><a className="submenu-link">Depreciation</a></li>
+            <li><button className="submenu-link">Fixed Assets</button></li>
+            <li><button className="submenu-link">Depreciation</button></li>
           </ul>
         </li>
 
@@ -469,21 +489,21 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
             <span className="nav-icon">
               <i className="fa-solid fa-chart-bar" />
             </span>
-            <span className="nav-text">Reporting &amp; Analytics</span>
+            <span className="nav-text">Reporting & Analytics</span>
             <span className="nav-caret">▸</span>
           </button>
           <ul className="submenu" aria-hidden={submenuHidden("reporting")}>
-            <li><a className="submenu-link">Attendance Reports</a></li>
-            <li><a className="submenu-link">Leave Trends</a></li>
-            <li><a className="submenu-link">Payroll Summary</a></li>
-            <li><a className="submenu-link">Employee Analytics</a></li>
-            <li><a className="submenu-link">Custom Reports</a></li>
+            <li><button className="submenu-link">Attendance Reports</button></li>
+            <li><button className="submenu-link">Leave Trends</button></li>
+            <li><button className="submenu-link">Payroll Summary</button></li>
+            <li><button className="submenu-link">Employee Analytics</button></li>
+            <li><button className="submenu-link">Custom Reports</button></li>
           </ul>
         </li>
 
-        {/* ================= CUSTOMER MANAGEMENT ================= */}
+        {/* ================= CUSTOMER ================= */}
         <li className="nav-item">
-          <a href="#" className="nav-link">
+          <a className="nav-link">
             <span className="nav-icon">
               <i className="fa-solid fa-users-gear" />
             </span>
@@ -505,16 +525,16 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
             <span className="nav-caret">▸</span>
           </button>
           <ul className="submenu" aria-hidden={submenuHidden("loan")}>
-            <li><a className="submenu-link">Employee Loan Request</a></li>
-            <li><a className="submenu-link">EMI Calculation</a></li>
-            <li><a className="submenu-link">EMI Auto Deduction</a></li>
-            <li><a className="submenu-link">Loan Balance Status</a></li>
+            <li><button className="submenu-link">Employee Loan Request</button></li>
+            <li><button className="submenu-link">EMI Calculation</button></li>
+            <li><button className="submenu-link">EMI Auto Deduction</button></li>
+            <li><button className="submenu-link">Loan Balance Status</button></li>
           </ul>
         </li>
 
         {/* ================= SETTINGS ================= */}
         <li className="nav-item">
-          <a href="#" className="nav-link">
+          <a className="nav-link">
             <span className="nav-icon">
               <i className="fa-solid fa-gear" />
             </span>
@@ -526,8 +546,6 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
         <button
           className="nav-link logout-btn-mob"
           type="button"
-          title="Log out"
-          aria-label="Log out"
           onClick={async () => {
             try {
               await logoutUser();
@@ -569,9 +587,14 @@ function Sidebar({ isMobileOpen, onClose, openSection, setOpenSection }) {
 
         <div className="user-info">
           <h4>{userName}</h4>
-          <p>{isClientAdmin ? "Client Admin" : "Admin"}</p>
+          <p>{isClientAdmin ? "Client Admin" : userRole}</p>
+
         </div>
       </div>
+
+      {showNoPermission && (
+        <NoPermissionModal onClose={() => setShowNoPermission(false)} />
+      )}
     </aside>
   );
 }

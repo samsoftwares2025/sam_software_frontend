@@ -41,6 +41,25 @@ export const getEmployementTypes = async () => {
   return data;
 };
 
+
+/**
+ * getEmployementTypes for non permitted users
+ */
+export const getEmployementTypes_employee_mgmnt = async () => {
+  const userId = getUserId();
+
+  const { data } = await http.post(
+    "/hr/employee-add-list-employment-type/",
+    { user_id: userId }
+  );
+
+  return data;
+};
+
+
+
+
+
 /**
  * updateEmployementType
  */
